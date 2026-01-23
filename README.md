@@ -24,7 +24,7 @@ Bộ gõ tiếng Việt cho Windows 10/11.
 
 ### Tải về (Khuyến nghị)
 
-1. Tải `ViKey-v1.2.0-win64.zip` từ Releases
+1. Tải [`ViKey-v1.2.0-win64.zip`](https://github.com/kmis8x/ViKey/releases/latest) từ Releases
 2. Giải nén vào thư mục bất kỳ
 3. Chạy `ViKey.exe`
 
