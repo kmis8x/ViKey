@@ -1,6 +1,16 @@
-# ViKey - Nhẹ, nhanh, chuẩn Việt
+# ViKey - Bộ gõ tiếng Việt đa nền tảng
 
-Bộ gõ tiếng Việt cho Windows 10/11.
+Bộ gõ tiếng Việt nhẹ, nhanh, chuẩn cho **Windows**, **macOS** và **Linux**.
+
+## Tải về
+
+| Nền tảng | Phiên bản | Tải |
+|----------|-----------|-----|
+| Windows 10/11 (64-bit) | v1.2.0 | [ViKey-v1.2.0-win64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
+| macOS (Apple Silicon) | v1.2.1 | [ViKey-macOS-arm64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
+| Linux x86_64 (IBus) | v1.0.0 | [ViKey-Linux-x86_64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
+
+**Không cần cài đặt!** Giải nén và chạy.
 
 ## Tính năng
 
@@ -10,47 +20,32 @@ Bộ gõ tiếng Việt cho Windows 10/11.
 - **ESC khôi phục**: Nhấn ESC để khôi phục văn bản gốc (úẻ → user)
 - **Bỏ dấu kiểu mới/cũ**: hoà vs hòa
 - **Phím tắt tuỳ chỉnh**: Mặc định Ctrl+Space
-- **Bỏ dấu tự do**: Bỏ qua kiểm tra vị trí dấu
-- **Phím tắt ngoặc**: [ → ơ, ] → ư
-- **Bỏ qua W**: w giữ nguyên ở đầu từ
-- **Chế độ chậm**: Dành cho terminal/Claude Code
-- **System tray**: Giao diện tối giản, chạy nền
-- **Lưu cài đặt**: Registry-based, giữ nguyên sau khởi động lại
-- **Khởi động cùng Windows**: Tuỳ chọn tự động chạy
-- **Khởi động ẩn**: Tuỳ chọn không hiện thông báo
 - **Hiệu suất**: <1ms độ trễ, <5MB RAM
 
-## Cài đặt
+## Hướng dẫn cài đặt
 
-### Tải về (Khuyến nghị)
+### Windows
 
-1. Tải [`ViKey-v1.2.0-win64.zip`](https://github.com/kmis8x/ViKey/releases/latest) từ Releases
+1. Tải `ViKey-v1.2.0-win64.zip`
 2. Giải nén vào thư mục bất kỳ
 3. Chạy `ViKey.exe`
 
-**Không cần cài .NET!** Tổng dung lượng: ~1MB
+### macOS
 
-### Build từ Source
+1. Tải `ViKey-macOS-arm64.zip`
+2. Giải nén và copy `ViKey.app` vào `~/Library/Input Methods/`
+3. Vào **System Settings → Keyboard → Input Sources → Add → Vietnamese → ViKey**
 
-Yêu cầu:
-- Windows 10/11 (64-bit)
-- Visual Studio 2022 Build Tools
-- Rust toolchain (MSVC target)
+Chi tiết: [app-macos/README.md](app-macos/README.md)
 
-```powershell
-# Clone
-git clone https://github.com/kmis8x/ViKey.git
-cd ViKey
+### Linux
 
-# Build Rust core
-.\scripts\build-core.ps1
+1. Tải `ViKey-Linux-x86_64.zip`
+2. Giải nén và chạy `sudo ./install.sh`
+3. Restart IBus: `ibus restart`
+4. Thêm ViKey trong **Settings → Keyboard → Input Sources**
 
-# Build native app
-.\scripts\build-native.ps1
-
-# Chạy
-.\app-native\bin\Release\ViKey.exe
-```
+Chi tiết: [app-linux/README.md](app-linux/README.md)
 
 ## Sử dụng
 
@@ -58,20 +53,10 @@ cd ViKey
 
 | Phím | Chức năng |
 |------|-----------|
-| `Ctrl+Space` | Bật/tắt gõ tiếng Việt (tuỳ chỉnh được) |
-| `ESC` | Khôi phục văn bản gốc (khi bật) |
+| `Ctrl+Space` | Bật/tắt gõ tiếng Việt |
+| `ESC` | Khôi phục văn bản gốc |
 
-### System Tray
-
-- **Double-click**: Bật/tắt gõ tiếng Việt
-- **Click phải**: Mở menu
-  - Bật/Tắt
-  - Chuyển Telex/VNI
-  - Cài đặt
-  - Giới thiệu
-  - Thoát
-
-### Bảng phím tắt
+### Bảng phím
 
 | Telex | VNI | Kết quả |
 |-------|-----|---------|
@@ -88,61 +73,52 @@ cd ViKey
 | `aw` | `a8` | ă |
 | `dd` | `d9` | đ |
 
-### Hoàn nguyên bằng phím đôi
-
-Gõ phím modifier hai lần để hoàn nguyên:
-- `aa` → â (chuyển đổi)
-- `aaa` → aa (hoàn nguyên)
-
 ## Cấu trúc dự án
 
 ```
 ViKey/
-├── core/               # Rust engine xử lý tiếng Việt
-│   └── src/            # Source code engine
-├── app-native/         # C++ Win32 GUI (~1MB)
-│   └── src/            # Source code native
-└── scripts/            # Scripts build và đóng gói
-    ├── build-core.ps1  # Build Rust core
-    ├── build-native.ps1# Build native app
-    └── package-native.ps1
+├── core/           # Rust engine (cross-platform)
+├── app-native/     # Windows GUI (C++ Win32)
+├── app-macos/      # macOS (Swift + Input Method Kit)
+├── app-linux/      # Linux (Rust + IBus)
+└── scripts/        # Build scripts
 ```
 
-## Hạn chế
+## Build từ Source
 
-- **UWP/Store apps**: Có thể không hoạt động trong ứng dụng sandbox
-- **Ứng dụng Admin**: Cần chạy ViKey với quyền admin
-- **Antivirus**: Có thể cảnh báo do keyboard hook (false positive)
+### Windows
+
+```powershell
+.\scripts\build-core.ps1
+.\scripts\build-native.ps1
+```
+
+### macOS
+
+```bash
+cd app-macos
+./build.sh
+```
+
+### Linux
+
+```bash
+cd app-linux
+./build.sh
+```
 
 ## Tác giả
 
 **Trần Công Sinh** (tcsinh89@gmail.com)
 
-Built with [Claude Code](https://claude.ai/code) + [ClaudeKit](https://claudekit.cc/)
-
-## Chính sách sử dụng
-
-### Miễn phí
-- Sử dụng cá nhân
-- Mục đích giáo dục
-- Dự án phi thương mại
-- Dự án mã nguồn mở (với attribution)
-
-### Thương mại
-Sử dụng thương mại cần xin phép trước từ tác giả:
-- Bán phần mềm hoặc sản phẩm phái sinh
-- Tích hợp vào sản phẩm/dịch vụ thương mại
-- Sử dụng trong ứng dụng tạo doanh thu
-- Phân phối như một phần của gói thương mại
-
-**Liên hệ:** tcsinh89@gmail.com
-
-### Yêu cầu
-Mọi bản phân phối phải giữ nguyên:
-- File LICENSE
-- Thông tin bản quyền trong mã nguồn
-- Attribution trong tài liệu/About dialog
+Built with [Claude Code](https://claude.ai/code)
 
 ## License
 
-BSD-3-Clause (xem file [LICENSE](LICENSE) để biết chi tiết)
+BSD-3-Clause (xem file [LICENSE](LICENSE))
+
+### Miễn phí
+- Sử dụng cá nhân, giáo dục, phi thương mại
+
+### Thương mại
+- Cần xin phép: tcsinh89@gmail.com
