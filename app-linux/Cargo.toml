@@ -8,8 +8,8 @@ license = "BSD-3-Clause"
 repository = "https://github.com/kmis8x/ViKey"
 
 [dependencies]
-# Link to vikey_core
-vikey_core = { path = "../core" }
+# Link to vikey-core (lib name: vikey_core)
+vikey-core = { path = "../core" }
 
 # GLib/GObject bindings
 glib = "0.18"
