@@ -1,0 +1,60 @@
+name: Build Linux Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-action@stable
+      with:
+        targets: x86_64-unknown-linux-gnu
+
+    - name: Install IBus development libraries
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libibus-1.0-dev pkg-config
+
+    - name: Build vikey_core
+      working-directory: core
+      run: cargo build --release --target x86_64-unknown-linux-gnu
+
+    - name: Copy library to app-linux
+      run: |
+        mkdir -p app-linux/lib
+        cp core/target/x86_64-unknown-linux-gnu/release/libvikey_core.a app-linux/lib/
+
+    - name: Build IBus engine
+      working-directory: app-linux
+      run: cargo build --release
+
+    - name: Create release package
+      run: |
+        mkdir -p release/vikey-linux
+        cp app-linux/target/release/ibus-engine-vikey release/vikey-linux/
+        cp app-linux/data/vikey.xml release/vikey-linux/
+        cp app-linux/README.md release/vikey-linux/
+        cp app-linux/install.sh release/vikey-linux/ 2>/dev/null || true
+        cd release && zip -r ViKey-Linux-x86_64.zip vikey-linux/
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ViKey-Linux-x86_64
+        path: release/ViKey-Linux-x86_64.zip
+
+    - name: Upload to Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release/ViKey-Linux-x86_64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
