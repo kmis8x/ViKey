@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+    <name>vn.vikey.ibus.ViKey</name>
+    <description>ViKey Vietnamese Input Method</description>
+    <exec>/usr/lib/ibus/ibus-engine-vikey</exec>
+    <version>1.0.0</version>
+    <author>Tran Cong Sinh &lt;tcsinh89@gmail.com&gt;</author>
+    <license>BSD-3-Clause</license>
+    <homepage>https://github.com/kmis8x/ViKey</homepage>
+    <textdomain>vikey</textdomain>
+
+    <engines>
+        <engine>
+            <name>vikey</name>
+            <language>vi</language>
+            <license>BSD-3-Clause</license>
+            <author>Tran Cong Sinh &lt;tcsinh89@gmail.com&gt;</author>
+            <icon>ibus-vikey</icon>
+            <layout>default</layout>
+            <longname>ViKey Vietnamese</longname>
+            <description>Vietnamese input method (Telex/VNI)</description>
+            <rank>80</rank>
+            <symbol>Vi</symbol>
+            <setup>/usr/lib/ibus/ibus-setup-vikey</setup>
+        </engine>
+    </engines>
+</component>

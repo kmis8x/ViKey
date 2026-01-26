@@ -1,0 +1,30 @@
+[package]
+name = "vikey-ibus"
+version = "1.0.0"
+edition = "2021"
+authors = ["Tran Cong Sinh <tcsinh89@gmail.com>"]
+description = "ViKey Vietnamese Input Method for Linux (IBus)"
+license = "BSD-3-Clause"
+repository = "https://github.com/kmis8x/ViKey"
+
+[dependencies]
+# Link to vikey_core
+vikey_core = { path = "../core" }
+
+# GLib/GObject bindings
+glib = "0.18"
+gio = "0.18"
+
+# IBus doesn't have good Rust bindings, use glib for main loop
+
+[build-dependencies]
+pkg-config = "0.3"
+
+[[bin]]
+name = "ibus-engine-vikey"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
