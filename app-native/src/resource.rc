@@ -11,8 +11,8 @@ IDI_LOGO ICON "V.ico"
 
 // Version Info
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,3,0,0
-PRODUCTVERSION 1,3,0,0
+FILEVERSION 1,3,1,0
+PRODUCTVERSION 1,3,1,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -25,12 +25,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ViKey"
             VALUE "FileDescription", "ViKey - Nhẹ, nhanh, chuẩn Việt"
-            VALUE "FileVersion", "1.3.0"
+            VALUE "FileVersion", "1.3.1"
             VALUE "InternalName", "ViKey"
             VALUE "LegalCopyright", "Copyright (C) 2026"
             VALUE "OriginalFilename", "ViKey.exe"
             VALUE "ProductName", "ViKey"
-            VALUE "ProductVersion", "1.3.0"
+            VALUE "ProductVersion", "1.3.1"
         END
     END
     BLOCK "VarFileInfo"
@@ -99,8 +99,9 @@ BEGIN
     AUTOCHECKBOX "Bỏ dấu tự do", IDC_CHECK_FREETONE, 195, 77, 65, 10
     AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 250, 91, 60, 10
     AUTOCHECKBOX "Dấu ngoặc làm phím tắt", IDC_CHECK_BRACKET, 265, 77, 40, 10
-    AUTOCHECKBOX "Chế độ chậm (terminal)", IDC_CHECK_SLOWMODE, 15, 105, 100, 10
-    AUTOCHECKBOX "Chế độ clipboard", IDC_CHECK_CLIPBOARD, 120, 105, 80, 10
+    AUTOCHECKBOX "f,j,w,z phụ âm", IDC_CHECK_FOREIGN, 15, 105, 60, 10
+    AUTOCHECKBOX "Chế độ chậm", IDC_CHECK_SLOWMODE, 80, 105, 55, 10
+    AUTOCHECKBOX "Clipboard mode", IDC_CHECK_CLIPBOARD, 140, 105, 60, 10
     AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 205, 105, 90, 10
 
     // Text Shortcuts Group
@@ -167,7 +168,7 @@ FONT 9, "Segoe UI", 400, 0, 0x1
 BEGIN
     ICON IDI_LOGO, IDC_STATIC_LOGO, 74, 12, 32, 32
     CTEXT "ViKey", -1, 0, 48, 180, 12
-    CTEXT "Phiên bản 1.3.0", -1, 0, 62, 180, 10
+    CTEXT "Phiên bản 1.3.1", -1, 0, 62, 180, 10
     CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 80, 180, 10
     CTEXT "Ctrl+Space để chuyển ngôn ngữ", -1, 0, 94, 180, 10
     DEFPUSHBUTTON "Đóng", IDOK, 65, 110, 50, 14

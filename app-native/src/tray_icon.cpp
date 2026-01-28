@@ -170,7 +170,7 @@ bool TrayIcon::ProcessTrayMessage(HWND hWnd, WPARAM wParam, LPARAM lParam) {
     }
 
     if (LOWORD(lParam) == WM_LBUTTONDBLCLK) {
-        if (onToggleEnabled) onToggleEnabled();
+        if (onSettings) onSettings();
         return true;
     }
 

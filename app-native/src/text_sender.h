@@ -33,6 +33,9 @@ public:
     // Send text replacement: delete characters then insert new text
     void SendText(const std::wstring& text, int backspaces);
 
+    // Clipboard mode: use clipboard + Ctrl+V (for stubborn apps)
+    void SendTextClipboard(const std::wstring& text, int backspaces);
+
 private:
     TextSender();
     ~TextSender() = default;
@@ -44,9 +47,6 @@ private:
 
     // Slow mode: send events one by one with delays (for problematic apps)
     void SendTextSlow(const std::wstring& text, int backspaces);
-
-    // Clipboard mode: use clipboard + Ctrl+V (for stubborn apps)
-    void SendTextClipboard(const std::wstring& text, int backspaces);
 
     bool m_slowMode;
     bool m_clipboardMode;

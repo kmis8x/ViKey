@@ -2,6 +2,16 @@
 
 Các thay đổi đáng chú ý của dự án.
 
+## [1.3.1] - 2026-01-28
+
+### Thêm mới
+- Cho phép phụ âm ngoại lai F, J, W, Z (tuỳ chọn trong cài đặt)
+- Double-click tray icon mở Cài đặt thay vì toggle chế độ gõ
+
+### Sửa lỗi
+- Sửa lỗi gõ tắt thừa space/dấu gạch (sử dụng clipboard mode cho shortcuts dài)
+- Cải thiện timing cho shortcut expansion
+
 ## [1.3.0] - 2026-01-28
 
 ### Thêm mới

@@ -1088,7 +1088,7 @@ impl Engine {
 
     /// Try word boundary shortcuts (triggered by space, punctuation, etc.)
     /// The `trigger_char` is appended to the output (space for space, punctuation for punctuation)
-    fn try_word_boundary_shortcut_with_char(&mut self, trigger_char: char) -> Result {
+    fn try_word_boundary_shortcut_with_char(&mut self, _trigger_char: char) -> Result {
         // Issue #107: Allow shortcuts with special char prefix (like "#fne")
         // If shortcut_prefix is set, we still try to match even with empty buffer
         if self.buf.is_empty() && self.shortcut_prefix.is_empty() {
@@ -1111,13 +1111,12 @@ impl Engine {
         let input_method = self.current_input_method();
 
         // Check for word boundary shortcut match
-        // For SPACE: append to output (space is "consumed" via Result::forward later)
-        // For punctuation: pass None - don't append, platform layer types it normally
-        // (This matches auto-restore behavior which also doesn't append break char)
-        let key_char = if trigger_char == ' ' {
+        // For SPACE: append to output so it's sent with the replacement text
+        // For punctuation: pass None - let platform type it normally
+        let key_char = if _trigger_char == ' ' {
             Some(' ')
         } else {
-            None // Punctuation: don't append, let platform type it
+            None
         };
         if let Some(m) =
             self.shortcuts

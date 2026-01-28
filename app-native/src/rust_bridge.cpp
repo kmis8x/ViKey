@@ -62,6 +62,7 @@ RustBridge::RustBridge()
     , m_ime_bracket_shortcut(nullptr)
     , m_ime_esc_restore(nullptr)
     , m_ime_free_tone(nullptr)
+    , m_ime_allow_foreign_consonants(nullptr)
     , m_ime_add_shortcut(nullptr)
     , m_ime_remove_shortcut(nullptr)
     , m_ime_clear_shortcuts(nullptr)
@@ -108,6 +109,7 @@ bool RustBridge::Initialize() {
     m_ime_bracket_shortcut = (FnBracketShortcut)GetProcAddress(m_hModule, "ime_bracket_shortcut");
     m_ime_esc_restore = (FnEscRestore)GetProcAddress(m_hModule, "ime_esc_restore");
     m_ime_free_tone = (FnFreeTone)GetProcAddress(m_hModule, "ime_free_tone");
+    m_ime_allow_foreign_consonants = (FnAllowForeignConsonants)GetProcAddress(m_hModule, "ime_allow_foreign_consonants");
     m_ime_add_shortcut = (FnAddShortcut)GetProcAddress(m_hModule, "ime_add_shortcut");
     m_ime_remove_shortcut = (FnRemoveShortcut)GetProcAddress(m_hModule, "ime_remove_shortcut");
     m_ime_clear_shortcuts = (FnClearShortcuts)GetProcAddress(m_hModule, "ime_clear_shortcuts");
@@ -178,6 +180,10 @@ void RustBridge::SetEscRestore(bool enabled) {
 
 void RustBridge::SetFreeTone(bool enabled) {
     if (m_ime_free_tone) m_ime_free_tone(enabled);
+}
+
+void RustBridge::SetAllowForeignConsonants(bool enabled) {
+    if (m_ime_allow_foreign_consonants) m_ime_allow_foreign_consonants(enabled);
 }
 
 void RustBridge::AddShortcut(const wchar_t* trigger, const wchar_t* replacement) {

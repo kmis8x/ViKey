@@ -371,6 +371,7 @@ void InitSettingsDialog(HWND hDlg) {
     SetDlgItemTextW(hDlg, IDC_CHECK_FREETONE, L"B\u1ECF d\u1EA5u t\u1EF1 do");
     SetDlgItemTextW(hDlg, IDC_CHECK_SKIPW, L"B\u1ECF qua ph\u00EDm t\u1EAFt w");
     SetDlgItemTextW(hDlg, IDC_CHECK_BRACKET, L"D\u1EA5u ngo\u1EB7c l\u00E0m ph\u00EDm t\u1EAFt");
+    SetDlgItemTextW(hDlg, IDC_CHECK_FOREIGN, L"f,j,w,z ph\u1EE5 \u00E2m");
     SetDlgItemTextW(hDlg, IDC_CHECK_SLOWMODE, L"Ch\u1EBF \u0111\u1ED9 ch\u1EADm (terminal)");
     SetDlgItemTextW(hDlg, IDC_CHECK_CLIPBOARD, L"Ch\u1EBF \u0111\u1ED9 clipboard");
     SetDlgItemTextW(hDlg, IDC_CHECK_SMARTSWITCH, L"Nh\u1EDB theo \u1EE9ng d\u1EE5ng");
@@ -393,6 +394,7 @@ void InitSettingsDialog(HWND hDlg) {
     CheckDlgButton(hDlg, IDC_CHECK_FREETONE, settings.freeTone ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_SKIPW, settings.skipWShortcut ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_BRACKET, settings.bracketShortcut ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hDlg, IDC_CHECK_FOREIGN, settings.allowForeignConsonants ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_SLOWMODE, settings.slowMode ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_CLIPBOARD, settings.clipboardMode ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_SMARTSWITCH, settings.smartSwitch ? BST_CHECKED : BST_UNCHECKED);
@@ -460,6 +462,7 @@ void SaveSettingsFromDialog(HWND hDlg) {
     settings.freeTone = IsDlgButtonChecked(hDlg, IDC_CHECK_FREETONE) == BST_CHECKED;
     settings.skipWShortcut = IsDlgButtonChecked(hDlg, IDC_CHECK_SKIPW) == BST_CHECKED;
     settings.bracketShortcut = IsDlgButtonChecked(hDlg, IDC_CHECK_BRACKET) == BST_CHECKED;
+    settings.allowForeignConsonants = IsDlgButtonChecked(hDlg, IDC_CHECK_FOREIGN) == BST_CHECKED;
     settings.slowMode = IsDlgButtonChecked(hDlg, IDC_CHECK_SLOWMODE) == BST_CHECKED;
     settings.clipboardMode = IsDlgButtonChecked(hDlg, IDC_CHECK_CLIPBOARD) == BST_CHECKED;
     settings.smartSwitch = IsDlgButtonChecked(hDlg, IDC_CHECK_SMARTSWITCH) == BST_CHECKED;

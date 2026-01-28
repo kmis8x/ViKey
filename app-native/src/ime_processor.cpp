@@ -81,6 +81,7 @@ void ImeProcessor::ApplySettings() {
     bridge.SetFreeTone(settings.freeTone);
     bridge.SetSkipWShortcut(settings.skipWShortcut);
     bridge.SetBracketShortcut(settings.bracketShortcut);
+    bridge.SetAllowForeignConsonants(settings.allowForeignConsonants);
 
     TextSender::Instance().SetSlowMode(settings.slowMode);
     TextSender::Instance().SetClipboardMode(settings.clipboardMode);
@@ -170,16 +171,8 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
         ShortcutManager::Instance().OnBackspace();
     }
 
-    // Check shortcut expansion on Space
-    if (vk == VK_SPACE_KEY) {
-        auto [expansion, len] = ShortcutManager::Instance().CheckExpansion();
-        if (!expansion.empty() && len > 0) {
-            // Replace shortcut with expansion (delete shortcut + send expansion + space)
-            TextSender::Instance().SendText(expansion + L" ", static_cast<int>(len));
-            event.handled = true;
-            return;
-        }
-    }
+    // Shortcut expansion is handled by the Rust engine on Space/punctuation.
+    // The Rust engine tracks exact buffer state for correct backspace count.
 
     // Convert VK code to macOS-style keycode
     uint16_t macKeycode = KeyCodes::ToMacKeycode(vk);
@@ -215,7 +208,13 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
                     text.length(), result.backspace);
             fflush(debugFile);
         }
-        TextSender::Instance().SendText(text, result.backspace);
+        // For shortcut expansion (backspaces > 4): use clipboard mode for reliability
+        if (result.backspace > 4) {
+            TextSender::Instance().SendTextClipboard(text, result.backspace);
+        } else {
+            TextSender::Instance().SendText(text, result.backspace);
+        }
+
         event.handled = true;
     } else if (result.IsKeyConsumed()) {
         // Key consumed but no text to send

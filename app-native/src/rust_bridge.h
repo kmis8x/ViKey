@@ -105,6 +105,9 @@ public:
     // Enable free tone placement (skip validation)
     void SetFreeTone(bool enabled);
 
+    // Allow foreign consonants (f, j, w, z) as valid initials
+    void SetAllowForeignConsonants(bool enabled);
+
     // Shortcut management
     void AddShortcut(const wchar_t* trigger, const wchar_t* replacement);
     void RemoveShortcut(const wchar_t* trigger);
@@ -136,6 +139,7 @@ private:
     using FnBracketShortcut = void(*)(bool);
     using FnEscRestore = void(*)(bool);
     using FnFreeTone = void(*)(bool);
+    using FnAllowForeignConsonants = void(*)(bool);
     using FnAddShortcut = void(*)(const char*, const char*);
     using FnRemoveShortcut = void(*)(const char*);
     using FnClearShortcuts = void(*)();
@@ -159,6 +163,7 @@ private:
     FnBracketShortcut m_ime_bracket_shortcut;
     FnEscRestore m_ime_esc_restore;
     FnFreeTone m_ime_free_tone;
+    FnAllowForeignConsonants m_ime_allow_foreign_consonants;
     FnAddShortcut m_ime_add_shortcut;
     FnRemoveShortcut m_ime_remove_shortcut;
     FnClearShortcuts m_ime_clear_shortcuts;

@@ -22,6 +22,7 @@ Settings::Settings()
     , autoCapitalize(false)
     , escRestore(true)
     , freeTone(false)
+    , allowForeignConsonants(false)
     , skipWShortcut(false)
     , bracketShortcut(false)
     , slowMode(false)
@@ -39,6 +40,7 @@ void Settings::Load() {
     autoCapitalize = GetBool(L"AutoCapitalize", false);
     escRestore = GetBool(L"EscRestore", true);
     freeTone = GetBool(L"FreeTone", false);
+    allowForeignConsonants = GetBool(L"AllowForeignConsonants", false);
     skipWShortcut = GetBool(L"SkipWTextShortcut", false);
     bracketShortcut = GetBool(L"BracketTextShortcut", false);
     slowMode = GetBool(L"SlowMode", false);
@@ -65,6 +67,7 @@ void Settings::Save() {
     SetBool(L"AutoCapitalize", autoCapitalize);
     SetBool(L"EscRestore", escRestore);
     SetBool(L"FreeTone", freeTone);
+    SetBool(L"AllowForeignConsonants", allowForeignConsonants);
     SetBool(L"SkipWTextShortcut", skipWShortcut);
     SetBool(L"BracketTextShortcut", bracketShortcut);
     SetBool(L"SlowMode", slowMode);
@@ -318,6 +321,7 @@ std::wstring Settings::ExportToJson() const {
     ss << L"    \"autoCapitalize\": " << (autoCapitalize ? L"true" : L"false") << L",\n";
     ss << L"    \"escRestore\": " << (escRestore ? L"true" : L"false") << L",\n";
     ss << L"    \"freeTone\": " << (freeTone ? L"true" : L"false") << L",\n";
+    ss << L"    \"allowForeignConsonants\": " << (allowForeignConsonants ? L"true" : L"false") << L",\n";
     ss << L"    \"skipWShortcut\": " << (skipWShortcut ? L"true" : L"false") << L",\n";
     ss << L"    \"bracketShortcut\": " << (bracketShortcut ? L"true" : L"false") << L",\n";
     ss << L"    \"slowMode\": " << (slowMode ? L"true" : L"false") << L",\n";
@@ -436,6 +440,7 @@ bool Settings::ImportFromJson(const std::wstring& json) {
     autoCapitalize = ExtractJsonBool(settingsSection, L"autoCapitalize", false);
     escRestore = ExtractJsonBool(settingsSection, L"escRestore", true);
     freeTone = ExtractJsonBool(settingsSection, L"freeTone", false);
+    allowForeignConsonants = ExtractJsonBool(settingsSection, L"allowForeignConsonants", false);
     skipWShortcut = ExtractJsonBool(settingsSection, L"skipWShortcut", false);
     bracketShortcut = ExtractJsonBool(settingsSection, L"bracketShortcut", false);
     slowMode = ExtractJsonBool(settingsSection, L"slowMode", false);

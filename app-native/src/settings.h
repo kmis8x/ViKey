@@ -47,6 +47,7 @@ public:
     bool autoCapitalize;
     bool escRestore;
     bool freeTone;
+    bool allowForeignConsonants;  // Allow f, j, w, z as valid consonants
     bool skipWShortcut;
     bool bracketShortcut;
     bool slowMode;
