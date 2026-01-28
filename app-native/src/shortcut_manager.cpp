@@ -22,7 +22,8 @@ void ShortcutManager::SetShortcuts(const std::vector<TextShortcut>& shortcuts) {
 }
 
 void ShortcutManager::OnChar(char c) {
-    if (std::isalnum(static_cast<unsigned char>(c))) {
+    // Allow letters, digits, and hyphens for shortcuts like --danger
+    if (std::isalnum(static_cast<unsigned char>(c)) || c == '-') {
         if (m_buffer.length() < MAX_BUFFER_LENGTH) {
             m_buffer += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         }

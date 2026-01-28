@@ -7,6 +7,10 @@
 #define IDI_APP_ICON          100
 #define IDI_ICON_VN           101
 #define IDI_ICON_EN           102
+#define IDI_LOGO              103
+
+// Static Controls
+#define IDC_STATIC_LOGO       104
 
 // Menu IDs
 #define IDM_TRAY_MENU         200
@@ -16,10 +20,35 @@
 #define IDM_SETTINGS          204
 #define IDM_ABOUT             205
 #define IDM_EXIT              206
+#define IDM_EXPORT_SETTINGS   207
+#define IDM_IMPORT_SETTINGS   208
+#define IDM_EXCLUDE_APPS      209
+#define IDM_CONVERTER         210
+#define IDM_ENC_UNICODE       211
+#define IDM_ENC_VNI           212
+#define IDM_ENC_TCVN3         213
 
 // Dialog IDs
 #define IDD_SETTINGS          300
 #define IDD_ABOUT             301
+#define IDD_EXCLUDE_APPS      302
+
+// Exclude Apps Dialog Controls (Feature 3)
+#define IDC_LIST_EXCLUDED         430
+#define IDC_BTN_ADD_EXCLUDED      431
+#define IDC_BTN_REMOVE_EXCLUDED   432
+#define IDC_BTN_GET_CURRENT       433
+#define IDC_EDIT_APP_NAME         434
+
+// Converter Dialog Controls (Feature 6)
+#define IDD_CONVERTER             303
+#define IDC_EDIT_SOURCE           440
+#define IDC_EDIT_TARGET           441
+#define IDC_COMBO_FROM            442
+#define IDC_COMBO_TO              443
+#define IDC_BTN_CONVERT           444
+#define IDC_BTN_SWAP              445
+#define IDC_BTN_COPY              446
 
 // Settings Dialog Controls
 #define IDC_CHECK_ENABLED     400
@@ -33,6 +62,8 @@
 #define IDC_CHECK_SKIPW       408
 #define IDC_CHECK_BRACKET     409
 #define IDC_CHECK_SLOWMODE    410
+#define IDC_CHECK_CLIPBOARD   426
+#define IDC_CHECK_SMARTSWITCH 427
 #define IDC_CHECK_AUTOSTART   411
 #define IDC_CHECK_SILENT      425
 #define IDC_LIST_SHORTCUTS    412

@@ -188,6 +188,11 @@ char ToChar(int vkCode, bool shift, bool capsLock) {
         return '0' + (char)(vkCode - VK_0_KEY);
     }
 
+    // Hyphen/minus key for shortcuts like --danger
+    if (vkCode == VK_OEM_MINUS_KEY) {
+        return shift ? '_' : '-';
+    }
+
     return 0;
 }
 

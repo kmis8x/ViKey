@@ -15,7 +15,8 @@ ImeProcessor& ImeProcessor::Instance() {
 ImeProcessor::ImeProcessor()
     : m_enabled(true)
     , m_method(InputMethod::Telex)
-    , m_initialized(false) {
+    , m_initialized(false)
+    , m_lastAppName(L"") {
 }
 
 bool ImeProcessor::Initialize() {
@@ -50,6 +51,15 @@ void ImeProcessor::SetEnabled(bool enabled) {
 
 void ImeProcessor::ToggleEnabled() {
     SetEnabled(!m_enabled);
+
+    // Save state for current app if smart switch is enabled
+    Settings& settings = Settings::Instance();
+    if (settings.smartSwitch) {
+        std::wstring currentApp = AppDetector::Instance().GetForegroundAppName();
+        if (!currentApp.empty()) {
+            AppDetector::Instance().SaveAppState(currentApp, m_enabled);
+        }
+    }
 }
 
 void ImeProcessor::SetMethod(InputMethod method) {
@@ -73,6 +83,10 @@ void ImeProcessor::ApplySettings() {
     bridge.SetBracketShortcut(settings.bracketShortcut);
 
     TextSender::Instance().SetSlowMode(settings.slowMode);
+    TextSender::Instance().SetClipboardMode(settings.clipboardMode);
+
+    // Sync excluded apps to AppDetector
+    AppDetector::Instance().SetExcludedApps(settings.excludedApps);
 
     UpdateShortcuts();
 }
@@ -93,7 +107,47 @@ void ImeProcessor::UpdateShortcuts() {
     }
 }
 
+void ImeProcessor::CheckAppChange() {
+    Settings& settings = Settings::Instance();
+
+    AppDetector& detector = AppDetector::Instance();
+    std::wstring currentApp = detector.GetForegroundAppName();
+
+    if (currentApp.empty()) return;
+
+    if (currentApp != m_lastAppName) {
+        // App changed - save state for old app, restore state for new app
+        if (!m_lastAppName.empty() && settings.smartSwitch) {
+            detector.SaveAppState(m_lastAppName, m_enabled);
+        }
+
+        m_lastAppName = currentApp;
+
+        // Check if new app is in exclusion list (Feature 3)
+        if (detector.IsCurrentAppExcluded()) {
+            if (m_enabled) {
+                m_enabled = false;
+                RustBridge::Instance().SetEnabled(false);
+            }
+        } else if (settings.smartSwitch) {
+            // Restore state for new app (Feature 2)
+            bool newState = detector.GetAppState(currentApp, settings.enabled);
+            if (newState != m_enabled) {
+                m_enabled = newState;
+                RustBridge::Instance().SetEnabled(newState);
+            }
+        }
+
+        // Apply per-app encoding (Feature 8)
+        int encoding = detector.GetAppEncoding(currentApp, 0);
+        TextSender::Instance().SetOutputEncoding(static_cast<OutputEncoding>(encoding));
+    }
+}
+
 void ImeProcessor::OnKeyPressed(KeyEventData& event) {
+    // Check for app changes (smart switch)
+    CheckAppChange();
+
     if (!m_enabled) {
         event.handled = false;
         return;

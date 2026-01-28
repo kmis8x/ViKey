@@ -50,9 +50,12 @@ public:
     bool skipWShortcut;
     bool bracketShortcut;
     bool slowMode;
+    bool clipboardMode;  // Use clipboard for text injection (for stubborn apps)
+    bool smartSwitch;    // Remember IME state per app (Feature 2)
     bool autoStart;
     bool silentStartup;  // Start minimized to tray without notification
     std::vector<TextShortcut> shortcuts;
+    std::vector<std::wstring> excludedApps;  // Apps to auto-disable (Feature 3)
     HotkeyConfig toggleHotkey;  // Configurable toggle hotkey
 
     // Get default shortcuts
@@ -61,6 +64,12 @@ public:
     // Auto-start management
     void SetAutoStart(bool enabled);
     bool GetAutoStart() const;
+
+    // Import/Export settings (Feature 5)
+    std::wstring ExportToJson() const;
+    bool ImportFromJson(const std::wstring& json);
+    static bool ExportToFile(const wchar_t* path);
+    static bool ImportFromFile(const wchar_t* path);
 
 private:
     Settings();
@@ -79,6 +88,10 @@ private:
     // Shortcut serialization
     void LoadShortcuts();
     void SaveShortcuts();
+
+    // Excluded apps serialization (Feature 3)
+    void LoadExcludedApps();
+    void SaveExcludedApps();
 
     static constexpr const wchar_t* REGISTRY_PATH = L"SOFTWARE\\ViKey";
     static constexpr const wchar_t* STARTUP_PATH = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";

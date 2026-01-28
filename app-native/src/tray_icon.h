@@ -53,6 +53,9 @@ private:
     // Create V or E icon programmatically
     HICON CreateLetterIcon(bool vietnamese);
 
+    // Load icon from file and add white border
+    HICON LoadIconWithBorder(const wchar_t* iconPath);
+
     // Load menu from resources
     void InitializeMenu(HINSTANCE hInstance);
 

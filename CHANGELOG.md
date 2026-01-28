@@ -2,6 +2,26 @@
 
 Các thay đổi đáng chú ý của dự án.
 
+## [1.3.0] - 2026-01-28
+
+### Thêm mới
+- Hỗ trợ gõ tắt với dấu gạch ngang (ví dụ: `--danger` → `--dangerously-skip-permissions`)
+- Icon tray mới V.ico/E.ico với viền trắng, nổi bật trên taskbar tối
+- Thêm logo vào dialog Giới thiệu
+- Chế độ clipboard cho ứng dụng không hỗ trợ SendInput
+- Nhớ encoding theo ứng dụng (Smart Switch)
+- Chuyển mã Unicode/VNI/TCVN3
+- Loại trừ ứng dụng tự động
+
+### Sửa lỗi
+- Sửa lỗi gõ tắt không nhận dấu `-`
+- Cải thiện timing cho terminal (tăng delay backspace/text)
+- Sửa căn chỉnh UI dialog Giới thiệu
+
+### Thay đổi
+- Tách module app_detector và encoding_converter
+- Cập nhật bố cục dialog cài đặt
+
 ## [1.2.0] - 2026-01-23
 
 ### Thêm mới

@@ -5,6 +5,7 @@
 #include "resource.h"
 #include <objidl.h>
 #include <gdiplus.h>
+#include <string>
 
 #pragma comment(lib, "gdiplus.lib")
 
@@ -31,14 +32,30 @@ TrayIcon::~TrayIcon() {
 bool TrayIcon::Initialize(HWND hWnd, HINSTANCE hInstance) {
     if (m_initialized) return true;
 
-    // Initialize GDI+
+    // Initialize GDI+ for icon creation
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-    // Create icons
-    m_iconVN = CreateLetterIcon(true);
-    m_iconEN = CreateLetterIcon(false);
+    // Get exe directory for icon paths
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+    std::wstring exeDir(exePath);
+    size_t lastSlash = exeDir.find_last_of(L"\\/");
+    if (lastSlash != std::wstring::npos) {
+        exeDir = exeDir.substr(0, lastSlash);
+    }
+
+    // Load icons from .ico files (already have white border)
+    std::wstring vnIconPath = exeDir + L"\\assets\\V.ico";
+    std::wstring enIconPath = exeDir + L"\\assets\\E.ico";
+
+    m_iconVN = (HICON)LoadImageW(nullptr, vnIconPath.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    m_iconEN = (HICON)LoadImageW(nullptr, enIconPath.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+
+    // Fallback to generated icons if files not found
+    if (!m_iconVN) m_iconVN = CreateLetterIcon(true);
+    if (!m_iconEN) m_iconEN = CreateLetterIcon(false);
 
     // Load menu from resources
     InitializeMenu(hInstance);
@@ -160,6 +177,62 @@ bool TrayIcon::ProcessTrayMessage(HWND hWnd, WPARAM wParam, LPARAM lParam) {
     return false;
 }
 
+HICON TrayIcon::LoadIconWithBorder(const wchar_t* iconPath) {
+    // Load icon from file
+    HICON hOriginal = (HICON)LoadImageW(nullptr, iconPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    if (!hOriginal) return nullptr;
+
+    // Create a new icon with white border
+    HDC hdcScreen = GetDC(nullptr);
+    HDC hdcMem = CreateCompatibleDC(hdcScreen);
+
+    BITMAPINFO bmi = {};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = 16;
+    bmi.bmiHeader.biHeight = -16;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    void* bits = nullptr;
+    HBITMAP hBitmap = CreateDIBSection(hdcMem, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
+    HBITMAP hOldBitmap = (HBITMAP)SelectObject(hdcMem, hBitmap);
+
+    Gdiplus::Graphics graphics(hdcMem);
+    graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+
+    // Clear with transparent
+    graphics.Clear(Gdiplus::Color(0, 0, 0, 0));
+
+    // Draw white circular border first
+    Gdiplus::Pen borderPen(Gdiplus::Color(255, 255, 255, 255), 1.5f);
+    graphics.DrawEllipse(&borderPen, 0.5f, 0.5f, 14.0f, 14.0f);
+
+    // Draw the original icon on top
+    DrawIconEx(hdcMem, 0, 0, hOriginal, 16, 16, 0, nullptr, DI_NORMAL);
+
+    SelectObject(hdcMem, hOldBitmap);
+
+    // Create mask
+    HBITMAP hMask = CreateBitmap(16, 16, 1, 1, nullptr);
+
+    ICONINFO iconInfo = {};
+    iconInfo.fIcon = TRUE;
+    iconInfo.hbmMask = hMask;
+    iconInfo.hbmColor = hBitmap;
+
+    HICON hNewIcon = CreateIconIndirect(&iconInfo);
+
+    // Cleanup
+    DeleteObject(hMask);
+    DeleteObject(hBitmap);
+    DeleteDC(hdcMem);
+    ReleaseDC(nullptr, hdcScreen);
+    DestroyIcon(hOriginal);
+
+    return hNewIcon;
+}
+
 HICON TrayIcon::CreateLetterIcon(bool vietnamese) {
     // Create a 16x16 icon with a letter
     HDC hdcScreen = GetDC(nullptr);
@@ -185,20 +258,34 @@ HICON TrayIcon::CreateLetterIcon(bool vietnamese) {
     // Clear background (transparent)
     graphics.Clear(Gdiplus::Color(0, 0, 0, 0));
 
-    // Choose color: Blue for VN, Gray for EN
-    Gdiplus::Color color = vietnamese ?
-        Gdiplus::Color(255, 30, 144, 255) :  // DodgerBlue
-        Gdiplus::Color(255, 128, 128, 128);  // Gray
+    // Choose background color: Blue for VN, Gray for EN
+    Gdiplus::Color bgColor = vietnamese ?
+        Gdiplus::Color(255, 0, 120, 212) :   // Windows Blue
+        Gdiplus::Color(255, 100, 100, 100);  // Dark Gray
 
-    Gdiplus::SolidBrush brush(color);
+    // Draw circular background for visibility on dark/light taskbars
+    Gdiplus::SolidBrush bgBrush(bgColor);
+    graphics.FillEllipse(&bgBrush, 0, 0, 15, 15);
+
+    // White border for contrast
+    Gdiplus::Pen borderPen(Gdiplus::Color(255, 255, 255, 255), 1.0f);
+    graphics.DrawEllipse(&borderPen, 0, 0, 15, 15);
+
+    // White text on colored background
+    Gdiplus::SolidBrush textBrush(Gdiplus::Color(255, 255, 255, 255));
 
     // Draw letter
     Gdiplus::FontFamily fontFamily(L"Arial");
-    Gdiplus::Font font(&fontFamily, 10, Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
+    Gdiplus::Font font(&fontFamily, 8, Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
 
     const wchar_t* letter = vietnamese ? L"V" : L"E";
-    Gdiplus::PointF origin(-1.0f, 1.0f);
-    graphics.DrawString(letter, -1, &font, origin, &brush);
+
+    // Center the text
+    Gdiplus::RectF layoutRect(0, 0, 16, 16);
+    Gdiplus::StringFormat format;
+    format.SetAlignment(Gdiplus::StringAlignmentCenter);
+    format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
+    graphics.DrawString(letter, -1, &font, layoutRect, &format, &textBrush);
 
     SelectObject(hdcMem, hOldBitmap);
 
@@ -230,6 +317,16 @@ void TrayIcon::InitializeMenu(HINSTANCE hInstance) {
     if (hPopup) {
         ModifyMenuW(hPopup, IDM_TOGGLE_ENABLED, MF_BYCOMMAND | MF_STRING, IDM_TOGGLE_ENABLED, L"Ti\u1EBFng Vi\u1EC7t (VN)");
         ModifyMenuW(hPopup, IDM_SETTINGS, MF_BYCOMMAND | MF_STRING, IDM_SETTINGS, L"C\u00E0i \u0111\u1EB7t...");
+        ModifyMenuW(hPopup, IDM_EXCLUDE_APPS, MF_BYCOMMAND | MF_STRING, IDM_EXCLUDE_APPS, L"Lo\u1EA1i tr\u1EEB \u1EE9ng d\u1EE5ng...");
+        ModifyMenuW(hPopup, IDM_CONVERTER, MF_BYCOMMAND | MF_STRING, IDM_CONVERTER, L"Chuy\u1EC3n m\u00E3...");
+        ModifyMenuW(hPopup, IDM_EXPORT_SETTINGS, MF_BYCOMMAND | MF_STRING, IDM_EXPORT_SETTINGS, L"Xu\u1EA5t c\u00E0i \u0111\u1EB7t...");
+
+        // Fix encoding submenu text
+        HMENU hEncMenu = GetSubMenu(hPopup, 4);  // Position of encoding submenu
+        if (hEncMenu) {
+            ModifyMenuW(hPopup, 4, MF_BYPOSITION | MF_POPUP | MF_STRING, (UINT_PTR)hEncMenu, L"M\u00E3 xu\u1EA5t");
+        }
+        ModifyMenuW(hPopup, IDM_IMPORT_SETTINGS, MF_BYCOMMAND | MF_STRING, IDM_IMPORT_SETTINGS, L"Nh\u1EADp c\u00E0i \u0111\u1EB7t...");
         ModifyMenuW(hPopup, IDM_ABOUT, MF_BYCOMMAND | MF_STRING, IDM_ABOUT, L"Gi\u1EDBi thi\u1EC7u");
         ModifyMenuW(hPopup, IDM_EXIT, MF_BYCOMMAND | MF_STRING, IDM_EXIT, L"Tho\u00E1t");
     }

@@ -10,6 +10,8 @@
 #include <objidl.h>
 #include <gdiplus.h>
 #include <commctrl.h>
+#include <commdlg.h>
+#include <shobjidl.h>
 
 #include "resource.h"
 #include "ime_processor.h"
@@ -17,6 +19,8 @@
 #include "hotkey.h"
 #include "settings.h"
 #include "keyboard_hook.h"
+#include "app_detector.h"
+#include "encoding_converter.h"
 #include <cstdio>
 #include <ctime>
 
@@ -46,6 +50,12 @@ INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 void UpdateUI();
 void ShowSettingsDialog();
 void ShowAboutDialog();
+void ExportSettings();
+void ImportSettings();
+void ShowExcludeAppsDialog();
+INT_PTR CALLBACK ExcludeAppsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+void ShowConverterDialog();
+INT_PTR CALLBACK ConverterDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 // Entry point
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -152,6 +162,9 @@ bool InitInstance(HINSTANCE hInstance) {
 
     // Load settings
     Settings::Instance().Load();
+
+    // Load app detector data (for smart switch)
+    AppDetector::Instance().Load();
 
     // Initialize IME processor
     if (!ImeProcessor::Instance().Initialize()) {
@@ -271,6 +284,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 TrayIcon::Instance().onSetMethod(InputMethod::VNI);
             break;
 
+        case IDM_ENC_UNICODE:
+        case IDM_ENC_VNI:
+        case IDM_ENC_TCVN3: {
+            OutputEncoding enc = OutputEncoding::Unicode;
+            if (LOWORD(wParam) == IDM_ENC_VNI) enc = OutputEncoding::VNI;
+            else if (LOWORD(wParam) == IDM_ENC_TCVN3) enc = OutputEncoding::TCVN3;
+
+            // Set encoding for current app
+            TextSender::Instance().SetOutputEncoding(enc);
+
+            // Save encoding for current app
+            std::wstring currentApp = AppDetector::Instance().GetForegroundAppName();
+            if (!currentApp.empty()) {
+                AppDetector::Instance().SetAppEncoding(currentApp, static_cast<int>(enc));
+            }
+
+            UpdateUI();
+            break;
+        }
+
         case IDM_SETTINGS:
             if (TrayIcon::Instance().onSettings)
                 TrayIcon::Instance().onSettings();
@@ -279,6 +312,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         case IDM_ABOUT:
             if (TrayIcon::Instance().onAbout)
                 TrayIcon::Instance().onAbout();
+            break;
+
+        case IDM_EXPORT_SETTINGS:
+            ExportSettings();
+            break;
+
+        case IDM_IMPORT_SETTINGS:
+            ImportSettings();
+            break;
+
+        case IDM_EXCLUDE_APPS:
+            ShowExcludeAppsDialog();
+            break;
+
+        case IDM_CONVERTER:
+            ShowConverterDialog();
             break;
 
         case IDM_EXIT:
@@ -323,6 +372,8 @@ void InitSettingsDialog(HWND hDlg) {
     SetDlgItemTextW(hDlg, IDC_CHECK_SKIPW, L"B\u1ECF qua ph\u00EDm t\u1EAFt w");
     SetDlgItemTextW(hDlg, IDC_CHECK_BRACKET, L"D\u1EA5u ngo\u1EB7c l\u00E0m ph\u00EDm t\u1EAFt");
     SetDlgItemTextW(hDlg, IDC_CHECK_SLOWMODE, L"Ch\u1EBF \u0111\u1ED9 ch\u1EADm (terminal)");
+    SetDlgItemTextW(hDlg, IDC_CHECK_CLIPBOARD, L"Ch\u1EBF \u0111\u1ED9 clipboard");
+    SetDlgItemTextW(hDlg, IDC_CHECK_SMARTSWITCH, L"Nh\u1EDB theo \u1EE9ng d\u1EE5ng");
     SetDlgItemTextW(hDlg, IDC_CHECK_AUTOSTART, L"Kh\u1EDFi \u0111\u1ED9ng c\u00F9ng Windows");
     SetDlgItemTextW(hDlg, IDC_CHECK_SILENT, L"\u1EA8n khi kh\u1EDFi \u0111\u1ED9ng");
     SetDlgItemTextW(hDlg, IDC_BTN_ADD, L"Th\u00EAm");
@@ -343,6 +394,8 @@ void InitSettingsDialog(HWND hDlg) {
     CheckDlgButton(hDlg, IDC_CHECK_SKIPW, settings.skipWShortcut ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_BRACKET, settings.bracketShortcut ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_SLOWMODE, settings.slowMode ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hDlg, IDC_CHECK_CLIPBOARD, settings.clipboardMode ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hDlg, IDC_CHECK_SMARTSWITCH, settings.smartSwitch ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_AUTOSTART, settings.autoStart ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_SILENT, settings.silentStartup ? BST_CHECKED : BST_UNCHECKED);
 
@@ -408,6 +461,8 @@ void SaveSettingsFromDialog(HWND hDlg) {
     settings.skipWShortcut = IsDlgButtonChecked(hDlg, IDC_CHECK_SKIPW) == BST_CHECKED;
     settings.bracketShortcut = IsDlgButtonChecked(hDlg, IDC_CHECK_BRACKET) == BST_CHECKED;
     settings.slowMode = IsDlgButtonChecked(hDlg, IDC_CHECK_SLOWMODE) == BST_CHECKED;
+    settings.clipboardMode = IsDlgButtonChecked(hDlg, IDC_CHECK_CLIPBOARD) == BST_CHECKED;
+    settings.smartSwitch = IsDlgButtonChecked(hDlg, IDC_CHECK_SMARTSWITCH) == BST_CHECKED;
     settings.autoStart = IsDlgButtonChecked(hDlg, IDC_CHECK_AUTOSTART) == BST_CHECKED;
     settings.silentStartup = IsDlgButtonChecked(hDlg, IDC_CHECK_SILENT) == BST_CHECKED;
 
@@ -523,6 +578,239 @@ INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
             EndDialog(hDlg, LOWORD(wParam));
+            return TRUE;
+        }
+        break;
+    }
+    return FALSE;
+}
+
+// Export/Import Settings (Feature 5)
+void ExportSettings() {
+    wchar_t filePath[MAX_PATH] = L"vikey-settings.json";
+
+    OPENFILENAMEW ofn = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = g_hWnd;
+    ofn.lpstrFilter = L"JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFile = filePath;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrTitle = L"Xu\u1EA5t c\u00E0i \u0111\u1EB7t ViKey";
+    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+    ofn.lpstrDefExt = L"json";
+
+    if (GetSaveFileNameW(&ofn)) {
+        if (Settings::ExportToFile(filePath)) {
+            TrayIcon::Instance().ShowBalloon(L"Xu\u1EA5t th\u00E0nh c\u00F4ng",
+                L"\u0110\u00E3 l\u01B0u c\u00E0i \u0111\u1EB7t v\u00E0o file");
+        } else {
+            MessageBoxW(g_hWnd, L"Kh\u00F4ng th\u1EC3 l\u01B0u file", L"L\u1ED7i", MB_ICONERROR);
+        }
+    }
+}
+
+void ImportSettings() {
+    wchar_t filePath[MAX_PATH] = L"";
+
+    OPENFILENAMEW ofn = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = g_hWnd;
+    ofn.lpstrFilter = L"JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFile = filePath;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrTitle = L"Nh\u1EADp c\u00E0i \u0111\u1EB7t ViKey";
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+    if (GetOpenFileNameW(&ofn)) {
+        if (Settings::ImportFromFile(filePath)) {
+            // Apply imported settings
+            ImeProcessor::Instance().ApplySettings();
+            HotkeyManager::Instance().UpdateHotkey(g_hWnd);
+            UpdateUI();
+            TrayIcon::Instance().ShowBalloon(L"Nh\u1EADp th\u00E0nh c\u00F4ng",
+                L"\u0110\u00E3 kh\u00F4i ph\u1EE5c c\u00E0i \u0111\u1EB7t t\u1EEB file");
+        } else {
+            MessageBoxW(g_hWnd, L"File kh\u00F4ng h\u1EE3p l\u1EC7 ho\u1EB7c kh\u00F4ng \u0111\u1ECDc \u0111\u01B0\u1EE3c",
+                L"L\u1ED7i", MB_ICONERROR);
+        }
+    }
+}
+
+// Exclude Apps Dialog (Feature 3)
+void ShowExcludeAppsDialog() {
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_EXCLUDE_APPS), g_hWnd, ExcludeAppsDialogProc);
+}
+
+INT_PTR CALLBACK ExcludeAppsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    UNREFERENCED_PARAMETER(lParam);
+
+    switch (message) {
+    case WM_INITDIALOG: {
+        // Set Vietnamese text
+        SetWindowTextW(hDlg, L"Lo\u1EA1i tr\u1EEB \u1EE9ng d\u1EE5ng");
+        SetDlgItemTextW(hDlg, IDC_BTN_GET_CURRENT, L"L\u1EA5y app\nhi\u1EC7n t\u1EA1i");
+        SetDlgItemTextW(hDlg, IDOK, L"L\u01B0u");
+        SetDlgItemTextW(hDlg, IDCANCEL, L"Hu\u1EF7");
+
+        // Populate list with current excluded apps
+        HWND hList = GetDlgItem(hDlg, IDC_LIST_EXCLUDED);
+        for (const auto& app : Settings::Instance().excludedApps) {
+            SendMessageW(hList, LB_ADDSTRING, 0, (LPARAM)app.c_str());
+        }
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDC_BTN_ADD_EXCLUDED: {
+            wchar_t appName[256] = {};
+            GetDlgItemTextW(hDlg, IDC_EDIT_APP_NAME, appName, 256);
+            if (wcslen(appName) > 0) {
+                HWND hList = GetDlgItem(hDlg, IDC_LIST_EXCLUDED);
+                SendMessageW(hList, LB_ADDSTRING, 0, (LPARAM)appName);
+                SetDlgItemTextW(hDlg, IDC_EDIT_APP_NAME, L"");
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_REMOVE_EXCLUDED: {
+            HWND hList = GetDlgItem(hDlg, IDC_LIST_EXCLUDED);
+            int sel = (int)SendMessageW(hList, LB_GETCURSEL, 0, 0);
+            if (sel != LB_ERR) {
+                SendMessageW(hList, LB_DELETESTRING, sel, 0);
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_GET_CURRENT: {
+            std::wstring currentApp = AppDetector::Instance().GetForegroundAppName();
+            if (!currentApp.empty()) {
+                SetDlgItemTextW(hDlg, IDC_EDIT_APP_NAME, currentApp.c_str());
+            }
+            return TRUE;
+        }
+
+        case IDOK: {
+            // Save list to settings
+            Settings& settings = Settings::Instance();
+            settings.excludedApps.clear();
+
+            HWND hList = GetDlgItem(hDlg, IDC_LIST_EXCLUDED);
+            int count = (int)SendMessageW(hList, LB_GETCOUNT, 0, 0);
+            for (int i = 0; i < count; i++) {
+                wchar_t app[256] = {};
+                SendMessageW(hList, LB_GETTEXT, i, (LPARAM)app);
+                if (wcslen(app) > 0) {
+                    settings.excludedApps.push_back(app);
+                }
+            }
+
+            settings.Save();
+            ImeProcessor::Instance().ApplySettings();
+
+            EndDialog(hDlg, IDOK);
+            return TRUE;
+        }
+
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            return TRUE;
+        }
+        break;
+    }
+    return FALSE;
+}
+
+// Converter Dialog (Feature 6)
+void ShowConverterDialog() {
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_CONVERTER), g_hWnd, ConverterDialogProc);
+}
+
+INT_PTR CALLBACK ConverterDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    UNREFERENCED_PARAMETER(lParam);
+
+    switch (message) {
+    case WM_INITDIALOG: {
+        // Set Vietnamese text
+        SetWindowTextW(hDlg, L"Chuy\u1EC3n m\u00E3 ti\u1EBFng Vi\u1EC7t");
+        SetDlgItemTextW(hDlg, IDC_BTN_CONVERT, L"Chuy\u1EC3n \u0111\u1ED5i");
+        SetDlgItemTextW(hDlg, IDC_BTN_COPY, L"Sao ch\u00E9p");
+        SetDlgItemTextW(hDlg, IDCANCEL, L"\u0110\u00F3ng");
+
+        // Populate encoding combos
+        HWND hFrom = GetDlgItem(hDlg, IDC_COMBO_FROM);
+        HWND hTo = GetDlgItem(hDlg, IDC_COMBO_TO);
+
+        for (int i = 0; i <= 3; i++) {
+            const wchar_t* name = EncodingConverter::GetEncodingName(static_cast<VietEncoding>(i));
+            SendMessageW(hFrom, CB_ADDSTRING, 0, (LPARAM)name);
+            SendMessageW(hTo, CB_ADDSTRING, 0, (LPARAM)name);
+        }
+
+        // Default: VNI -> Unicode
+        SendMessageW(hFrom, CB_SETCURSEL, 1, 0);
+        SendMessageW(hTo, CB_SETCURSEL, 0, 0);
+
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDC_BTN_CONVERT: {
+            int len = GetWindowTextLengthW(GetDlgItem(hDlg, IDC_EDIT_SOURCE));
+            if (len > 0) {
+                std::wstring source(len + 1, L'\0');
+                GetDlgItemTextW(hDlg, IDC_EDIT_SOURCE, &source[0], len + 1);
+                source.resize(len);
+
+                int fromIdx = (int)SendMessageW(GetDlgItem(hDlg, IDC_COMBO_FROM), CB_GETCURSEL, 0, 0);
+                int toIdx = (int)SendMessageW(GetDlgItem(hDlg, IDC_COMBO_TO), CB_GETCURSEL, 0, 0);
+
+                VietEncoding from = static_cast<VietEncoding>(fromIdx);
+                VietEncoding to = static_cast<VietEncoding>(toIdx);
+
+                std::wstring result = EncodingConverter::Instance().Convert(source, from, to);
+                SetDlgItemTextW(hDlg, IDC_EDIT_TARGET, result.c_str());
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_SWAP: {
+            HWND hFrom = GetDlgItem(hDlg, IDC_COMBO_FROM);
+            HWND hTo = GetDlgItem(hDlg, IDC_COMBO_TO);
+            int fromIdx = (int)SendMessageW(hFrom, CB_GETCURSEL, 0, 0);
+            int toIdx = (int)SendMessageW(hTo, CB_GETCURSEL, 0, 0);
+            SendMessageW(hFrom, CB_SETCURSEL, toIdx, 0);
+            SendMessageW(hTo, CB_SETCURSEL, fromIdx, 0);
+            return TRUE;
+        }
+
+        case IDC_BTN_COPY: {
+            int len = GetWindowTextLengthW(GetDlgItem(hDlg, IDC_EDIT_TARGET));
+            if (len > 0) {
+                std::wstring text(len + 1, L'\0');
+                GetDlgItemTextW(hDlg, IDC_EDIT_TARGET, &text[0], len + 1);
+
+                if (OpenClipboard(hDlg)) {
+                    EmptyClipboard();
+                    size_t size = (len + 1) * sizeof(wchar_t);
+                    HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, size);
+                    if (hGlobal) {
+                        wchar_t* pGlobal = static_cast<wchar_t*>(GlobalLock(hGlobal));
+                        if (pGlobal) {
+                            wcscpy_s(pGlobal, len + 1, text.c_str());
+                            GlobalUnlock(hGlobal);
+                            SetClipboardData(CF_UNICODETEXT, hGlobal);
+                        }
+                    }
+                    CloseClipboard();
+                }
+            }
+            return TRUE;
+        }
+
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
             return TRUE;
         }
         break;

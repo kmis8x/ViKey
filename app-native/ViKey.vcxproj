@@ -130,6 +130,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ClCompile Include="src\app_detector.cpp" />
+    <ClCompile Include="src\encoding_converter.cpp" />
     <ClCompile Include="src\hotkey.cpp" />
     <ClCompile Include="src\ime_processor.cpp" />
     <ClCompile Include="src\keyboard_hook.cpp" />

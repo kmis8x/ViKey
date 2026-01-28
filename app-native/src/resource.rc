@@ -6,10 +6,13 @@
 #include <windows.h>
 #include "resource.h"
 
+// Icons
+IDI_LOGO ICON "V.ico"
+
 // Version Info
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,2,0,0
-PRODUCTVERSION 1,2,0,0
+FILEVERSION 1,3,0,0
+PRODUCTVERSION 1,3,0,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -22,12 +25,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ViKey"
             VALUE "FileDescription", "ViKey - Nhẹ, nhanh, chuẩn Việt"
-            VALUE "FileVersion", "1.2.0"
+            VALUE "FileVersion", "1.3.0"
             VALUE "InternalName", "ViKey"
             VALUE "LegalCopyright", "Copyright (C) 2026"
             VALUE "OriginalFilename", "ViKey.exe"
             VALUE "ProductName", "ViKey"
-            VALUE "ProductVersion", "1.2.0"
+            VALUE "ProductVersion", "1.3.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -46,7 +49,19 @@ BEGIN
         MENUITEM "Telex", IDM_METHOD_TELEX, CHECKED
         MENUITEM "VNI", IDM_METHOD_VNI
         MENUITEM SEPARATOR
+        POPUP "Mã xuất"
+        BEGIN
+            MENUITEM "Unicode", IDM_ENC_UNICODE, CHECKED
+            MENUITEM "VNI Windows", IDM_ENC_VNI
+            MENUITEM "TCVN3 (ABC)", IDM_ENC_TCVN3
+        END
+        MENUITEM SEPARATOR
         MENUITEM "Cài đặt...", IDM_SETTINGS
+        MENUITEM "Loại trừ ứng dụng...", IDM_EXCLUDE_APPS
+        MENUITEM "Chuyển mã...", IDM_CONVERTER
+        MENUITEM "Xuất cài đặt...", IDM_EXPORT_SETTINGS
+        MENUITEM "Nhập cài đặt...", IDM_IMPORT_SETTINGS
+        MENUITEM SEPARATOR
         MENUITEM "Giới thiệu", IDM_ABOUT
         MENUITEM SEPARATOR
         MENUITEM "Thoát", IDM_EXIT
@@ -56,7 +71,7 @@ END
 // Settings Dialog
 IDD_SETTINGS DIALOGEX 0, 0, 320, 380
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Cài đặt"
+CAPTION "Cài đặt ViKey"
 FONT 9, "Segoe UI", 400, 0, 0x1
 BEGIN
     // Row 1: Kiểu gõ | Hệ thống | Phím chuyển (3 columns)
@@ -85,6 +100,8 @@ BEGIN
     AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 250, 91, 60, 10
     AUTOCHECKBOX "Dấu ngoặc làm phím tắt", IDC_CHECK_BRACKET, 265, 77, 40, 10
     AUTOCHECKBOX "Chế độ chậm (terminal)", IDC_CHECK_SLOWMODE, 15, 105, 100, 10
+    AUTOCHECKBOX "Chế độ clipboard", IDC_CHECK_CLIPBOARD, 120, 105, 80, 10
+    AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 205, 105, 90, 10
 
     // Text Shortcuts Group
     GROUPBOX "Gõ tắt", -1, 7, 122, 306, 220
@@ -101,17 +118,59 @@ BEGIN
     PUSHBUTTON "Huỷ", IDC_BTN_CANCEL, 258, 355, 55, 16
 END
 
+// Exclude Apps Dialog (Feature 3)
+IDD_EXCLUDE_APPS DIALOGEX 0, 0, 250, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Loại trừ ứng dụng"
+FONT 9, "Segoe UI", 400, 0, 0x1
+BEGIN
+    LTEXT "Ứng dụng sẽ tự động tắt tiếng Việt:", -1, 7, 7, 150, 10
+    LISTBOX IDC_LIST_EXCLUDED, 7, 20, 180, 140, LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON "+", IDC_BTN_ADD_EXCLUDED, 195, 20, 20, 16
+    PUSHBUTTON "-", IDC_BTN_REMOVE_EXCLUDED, 195, 40, 20, 16
+    PUSHBUTTON "Lấy app hiện tại", IDC_BTN_GET_CURRENT, 195, 65, 48, 20, BS_MULTILINE
+    LTEXT "Nhập tên file .exe:", -1, 7, 165, 80, 10
+    EDITTEXT IDC_EDIT_APP_NAME, 90, 162, 125, 14, ES_AUTOHSCROLL
+    DEFPUSHBUTTON "Lưu", IDOK, 135, 180, 50, 14
+    PUSHBUTTON "Huỷ", IDCANCEL, 190, 180, 50, 14
+END
+
+// Converter Dialog (Feature 6)
+IDD_CONVERTER DIALOGEX 0, 0, 320, 220
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Chuyển mã tiếng Việt"
+FONT 9, "Segoe UI", 400, 0, 0x1
+BEGIN
+    LTEXT "Từ:", -1, 7, 9, 20, 10
+    COMBOBOX IDC_COMBO_FROM, 27, 7, 100, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT "Sang:", -1, 140, 9, 30, 10
+    COMBOBOX IDC_COMBO_TO, 170, 7, 100, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON "<->", IDC_BTN_SWAP, 280, 6, 30, 14
+
+    LTEXT "Văn bản nguồn:", -1, 7, 28, 60, 10
+    EDITTEXT IDC_EDIT_SOURCE, 7, 40, 305, 60, ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL
+
+    PUSHBUTTON "Chuyển đổi", IDC_BTN_CONVERT, 130, 105, 60, 16
+
+    LTEXT "Kết quả:", -1, 7, 128, 40, 10
+    EDITTEXT IDC_EDIT_TARGET, 7, 140, 305, 50, ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL
+
+    PUSHBUTTON "Sao chép", IDC_BTN_COPY, 200, 198, 50, 14
+    PUSHBUTTON "Đóng", IDCANCEL, 260, 198, 50, 14
+END
+
 // About Dialog
-IDD_ABOUT DIALOGEX 0, 0, 200, 100
+IDD_ABOUT DIALOGEX 0, 0, 180, 130
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Giới thiệu"
 FONT 9, "Segoe UI", 400, 0, 0x1
 BEGIN
-    CTEXT "ViKey", -1, 0, 15, 200, 12
-    CTEXT "Phiên bản 1.2.0", -1, 0, 30, 200, 10
-    CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 50, 200, 10
-    CTEXT "Ctrl+Space để chuyển ngôn ngữ", -1, 0, 65, 200, 10
-    DEFPUSHBUTTON "Đóng", IDOK, 75, 80, 50, 14
+    ICON IDI_LOGO, IDC_STATIC_LOGO, 74, 12, 32, 32
+    CTEXT "ViKey", -1, 0, 48, 180, 12
+    CTEXT "Phiên bản 1.3.0", -1, 0, 62, 180, 10
+    CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 80, 180, 10
+    CTEXT "Ctrl+Space để chuyển ngôn ngữ", -1, 0, 94, 180, 10
+    DEFPUSHBUTTON "Đóng", IDOK, 65, 110, 50, 14
 END
 
 // String Table

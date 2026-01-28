@@ -10,6 +10,7 @@
 #include "text_sender.h"
 #include "shortcut_manager.h"
 #include "settings.h"
+#include "app_detector.h"
 
 class ImeProcessor {
 public:
@@ -48,7 +49,11 @@ private:
     // Key press handler
     void OnKeyPressed(KeyEventData& event);
 
+    // Check and handle app changes (for smart switch)
+    void CheckAppChange();
+
     bool m_enabled;
+    std::wstring m_lastAppName;  // Track last app for smart switch
     InputMethod m_method;
     bool m_initialized;
 };
