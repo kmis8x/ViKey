@@ -1,4 +1,4 @@
-﻿// ViKey - Win32 Resources
+// ViKey - Win32 Resources
 // resource.rc
 
 #pragma code_page(65001)
@@ -7,12 +7,14 @@
 #include "resource.h"
 
 // Icons
-IDI_LOGO ICON "V.ico"
+IDI_LOGO ICON "logo.ico"
+IDI_ICON_VN ICON "V.ico"
+IDI_ICON_EN ICON "E.ico"
 
 // Version Info
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,3,1,0
-PRODUCTVERSION 1,3,1,0
+FILEVERSION 1,3,2,0
+PRODUCTVERSION 1,3,2,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -25,12 +27,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ViKey"
             VALUE "FileDescription", "ViKey - Nhẹ, nhanh, chuẩn Việt"
-            VALUE "FileVersion", "1.3.1"
+            VALUE "FileVersion", "1.3.2"
             VALUE "InternalName", "ViKey"
             VALUE "LegalCopyright", "Copyright (C) 2026"
             VALUE "OriginalFilename", "ViKey.exe"
             VALUE "ProductName", "ViKey"
-            VALUE "ProductVersion", "1.3.1"
+            VALUE "ProductVersion", "1.3.2"
         END
     END
     BLOCK "VarFileInfo"
@@ -57,6 +59,7 @@ BEGIN
         END
         MENUITEM SEPARATOR
         MENUITEM "Cài đặt...", IDM_SETTINGS
+        MENUITEM "Gõ tắt...", IDM_SHORTCUTS
         MENUITEM "Loại trừ ứng dụng...", IDM_EXCLUDE_APPS
         MENUITEM "Chuyển mã...", IDM_CONVERTER
         MENUITEM "Xuất cài đặt...", IDM_EXPORT_SETTINGS
@@ -68,111 +71,138 @@ BEGIN
     END
 END
 
-// Settings Dialog
-IDD_SETTINGS DIALOGEX 0, 0, 320, 380
+// =============================================================================
+// Settings Dialog - EVKey style with dark mode support
+// =============================================================================
+IDD_SETTINGS DIALOGEX 0, 0, 300, 175
 EXSTYLE WS_EX_APPWINDOW
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Cài đặt ViKey"
-FONT 9, "Segoe UI", 400, 0, 0x1
+CAPTION "ViKey x64 - 1.3.2 - Nhẹ, nhanh, chuẩn Việt"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    // Row 1: Kiểu gõ | Hệ thống | Phím chuyển (3 columns)
-    GROUPBOX "Kiểu gõ", -1, 7, 7, 70, 50
-    AUTORADIOBUTTON "Telex", IDC_RADIO_TELEX, 15, 22, 50, 10, WS_GROUP
-    AUTORADIOBUTTON "VNI", IDC_RADIO_VNI, 15, 36, 50, 10
+    // Top section - Điều khiển
+    GROUPBOX "Điều khiển", -1, 4, 2, 235, 48
+    LTEXT "Kiểu gõ", -1, 10, 14, 30, 8
+    COMBOBOX IDC_COMBO_METHOD, 45, 12, 80, 60, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT "Phím chuyển", -1, 10, 30, 42, 8
+    AUTOCHECKBOX "Ctrl", IDC_CHECK_HOTKEY_CTRL, 55, 30, 26, 10
+    AUTOCHECKBOX "Shift", IDC_CHECK_HOTKEY_SHIFT, 82, 30, 32, 10
+    AUTOCHECKBOX "Alt", IDC_CHECK_HOTKEY_ALT, 115, 30, 22, 10
+    EDITTEXT IDC_EDIT_HOTKEY, 140, 28, 35, 12, ES_AUTOHSCROLL | ES_UPPERCASE
+    AUTOCHECKBOX "Win", IDC_CHECK_HOTKEY_WIN, 178, 30, 28, 10
 
-    GROUPBOX "Hệ thống", -1, 82, 7, 100, 50
-    AUTOCHECKBOX "Khởi động cùng Win", IDC_CHECK_AUTOSTART, 90, 22, 85, 10
-    AUTOCHECKBOX "Ẩn khi khởi động", IDC_CHECK_SILENT, 90, 36, 85, 10
+    // Right buttons
+    DEFPUSHBUTTON "Lưu", IDC_BTN_OK, 245, 10, 50, 16
+    PUSHBUTTON "Huỷ", IDC_BTN_CANCEL, 245, 30, 50, 16
 
-    GROUPBOX "Phím chuyển", -1, 187, 7, 126, 50
-    AUTOCHECKBOX "Ctrl", IDC_CHECK_HOTKEY_CTRL, 195, 22, 30, 10
-    AUTOCHECKBOX "Shift", IDC_CHECK_HOTKEY_SHIFT, 228, 22, 35, 10
-    AUTOCHECKBOX "Alt", IDC_CHECK_HOTKEY_ALT, 266, 22, 25, 10
-    AUTOCHECKBOX "Win", IDC_CHECK_HOTKEY_WIN, 195, 36, 30, 10
-    EDITTEXT IDC_EDIT_HOTKEY, 230, 34, 45, 14, ES_AUTOHSCROLL | ES_UPPERCASE
+    // Options - 2 columns only
+    AUTOCHECKBOX "Bỏ dấu kiểu mới", IDC_CHECK_MODERN, 10, 55, 70, 10
+    AUTOCHECKBOX "Bỏ dấu tự do", IDC_CHECK_FREETONE, 10, 68, 60, 10
+    AUTOCHECKBOX "f,j,w,z phụ âm", IDC_CHECK_FOREIGN, 10, 81, 65, 10
+    AUTOCHECKBOX "Tự động viết hoa", IDC_CHECK_AUTOCAP, 10, 94, 70, 10
+    AUTOCHECKBOX "Chế độ clipboard", IDC_CHECK_CLIPBOARD, 10, 107, 70, 10
+    AUTOCHECKBOX "Cho phép gõ tắt", IDC_CHECK_SHORTCUT_ENABLED, 10, 120, 68, 10
+    AUTOCHECKBOX "Khởi động cùng Windows", IDC_CHECK_AUTOSTART, 10, 133, 95, 10
 
-    // Options Group (full width below row 1)
-    GROUPBOX "Tuỳ chọn", -1, 7, 62, 306, 55
-    AUTOCHECKBOX "Bỏ dấu kiểu mới", IDC_CHECK_MODERN, 15, 77, 90, 10
-    AUTOCHECKBOX "Tự động khôi phục tiếng Anh", IDC_CHECK_AUTORESTORE, 15, 91, 130, 10
-    AUTOCHECKBOX "Tự động viết hoa", IDC_CHECK_AUTOCAP, 110, 77, 80, 10
-    AUTOCHECKBOX "ESC khôi phục ASCII", IDC_CHECK_ESCRESTORE, 150, 91, 95, 10
-    AUTOCHECKBOX "Bỏ dấu tự do", IDC_CHECK_FREETONE, 195, 77, 65, 10
-    AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 250, 91, 60, 10
-    AUTOCHECKBOX "Dấu ngoặc làm phím tắt", IDC_CHECK_BRACKET, 265, 77, 40, 10
-    AUTOCHECKBOX "f,j,w,z phụ âm", IDC_CHECK_FOREIGN, 15, 105, 60, 10
-    AUTOCHECKBOX "Chế độ chậm", IDC_CHECK_SLOWMODE, 80, 105, 55, 10
-    AUTOCHECKBOX "Clipboard mode", IDC_CHECK_CLIPBOARD, 140, 105, 60, 10
-    AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 205, 105, 90, 10
+    AUTOCHECKBOX "Tự động khôi phục tiếng Anh", IDC_CHECK_AUTORESTORE, 155, 55, 110, 10
+    AUTOCHECKBOX "ESC khôi phục ASCII", IDC_CHECK_ESCRESTORE, 155, 68, 85, 10
+    AUTOCHECKBOX "Dấu ngoặc làm phím tắt", IDC_CHECK_BRACKET, 155, 81, 95, 10
+    AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 155, 94, 80, 10
+    AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 155, 107, 80, 10
+    AUTOCHECKBOX "Chế độ chậm (terminal)", IDC_CHECK_SLOWMODE, 155, 120, 95, 10
+    AUTOCHECKBOX "Ẩn khi khởi động", IDC_CHECK_SILENT, 155, 133, 70, 10
 
-    // Text Shortcuts Group
-    GROUPBOX "Gõ tắt", -1, 7, 122, 306, 220
-    CONTROL "", IDC_LIST_SHORTCUTS, "SysListView32", LVS_REPORT | LVS_SINGLESEL | WS_BORDER | WS_TABSTOP, 15, 137, 290, 155
-    LTEXT "Tắt:", -1, 15, 300, 20, 10
-    EDITTEXT IDC_EDIT_KEY, 35, 298, 70, 14, ES_AUTOHSCROLL
-    LTEXT "Đầy đủ:", -1, 115, 300, 35, 10
-    EDITTEXT IDC_EDIT_VALUE, 150, 298, 90, 14, ES_AUTOHSCROLL
-    PUSHBUTTON "Thêm", IDC_BTN_ADD, 250, 297, 30, 16
-    PUSHBUTTON "Xoá", IDC_BTN_REMOVE, 282, 297, 25, 16
-
-    // Dialog Buttons
-    DEFPUSHBUTTON "Lưu", IDC_BTN_OK, 200, 355, 55, 16
-    PUSHBUTTON "Huỷ", IDC_BTN_CANCEL, 258, 355, 55, 16
+    // Bottom buttons row
+    PUSHBUTTON "Bảng gõ tắt...", IDC_BTN_SHORTCUTS, 10, 155, 55, 15
+    PUSHBUTTON "Loại trừ...", IDC_BTN_EXCLUDE, 70, 155, 45, 15
+    PUSHBUTTON "Chuyển mã...", IDC_BTN_CONVERTER, 120, 155, 50, 15
 END
 
-// Exclude Apps Dialog (Feature 3)
-IDD_EXCLUDE_APPS DIALOGEX 0, 0, 250, 200
+// =============================================================================
+// Shortcuts Dialog
+// =============================================================================
+IDD_SHORTCUTS DIALOGEX 0, 0, 220, 155
+EXSTYLE WS_EX_APPWINDOW
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Loại trừ ứng dụng"
-FONT 9, "Segoe UI", 400, 0, 0x1
+CAPTION "Gõ tắt - ViKey"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT "Ứng dụng sẽ tự động tắt tiếng Việt:", -1, 7, 7, 150, 10
-    LISTBOX IDC_LIST_EXCLUDED, 7, 20, 180, 140, LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON "+", IDC_BTN_ADD_EXCLUDED, 195, 20, 20, 16
-    PUSHBUTTON "-", IDC_BTN_REMOVE_EXCLUDED, 195, 40, 20, 16
-    PUSHBUTTON "Lấy app hiện tại", IDC_BTN_GET_CURRENT, 195, 65, 48, 20, BS_MULTILINE
-    LTEXT "Nhập tên file .exe:", -1, 7, 165, 80, 10
-    EDITTEXT IDC_EDIT_APP_NAME, 90, 162, 125, 14, ES_AUTOHSCROLL
-    DEFPUSHBUTTON "Lưu", IDOK, 135, 180, 50, 14
-    PUSHBUTTON "Huỷ", IDCANCEL, 190, 180, 50, 14
+    CONTROL "", IDC_LIST_SHORTCUTS, "SysListView32", LVS_REPORT | LVS_SINGLESEL | WS_BORDER | WS_TABSTOP, 4, 4, 212, 100
+
+    LTEXT "Tắt:", -1, 4, 112, 16, 8
+    EDITTEXT IDC_EDIT_KEY, 22, 110, 55, 13, ES_AUTOHSCROLL
+    LTEXT "Thay:", -1, 82, 112, 20, 8
+    EDITTEXT IDC_EDIT_VALUE, 104, 110, 75, 13, ES_AUTOHSCROLL
+    PUSHBUTTON "+", IDC_BTN_ADD, 183, 109, 16, 15
+    PUSHBUTTON "-", IDC_BTN_REMOVE, 200, 109, 16, 15
+
+    PUSHBUTTON "Xuất...", IDC_BTN_EXPORT_SC, 4, 135, 38, 15
+    PUSHBUTTON "Nhập...", IDC_BTN_IMPORT_SC, 45, 135, 38, 15
+    DEFPUSHBUTTON "Lưu", IDC_BTN_OK, 132, 135, 40, 15
+    PUSHBUTTON "Huỷ", IDC_BTN_CANCEL, 176, 135, 40, 15
 END
 
-// Converter Dialog (Feature 6)
-IDD_CONVERTER DIALOGEX 0, 0, 320, 220
+// =============================================================================
+// Exclude Apps Dialog
+// =============================================================================
+IDD_EXCLUDE_APPS DIALOGEX 0, 0, 185, 145
+EXSTYLE WS_EX_APPWINDOW
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Chuyển mã tiếng Việt"
-FONT 9, "Segoe UI", 400, 0, 0x1
+CAPTION "ViKey - Loại trừ ứng dụng"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT "Từ:", -1, 7, 9, 20, 10
-    COMBOBOX IDC_COMBO_FROM, 27, 7, 100, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT "Sang:", -1, 140, 9, 30, 10
-    COMBOBOX IDC_COMBO_TO, 170, 7, 100, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON "<->", IDC_BTN_SWAP, 280, 6, 30, 14
+    LTEXT "Tự động tắt tiếng Việt:", -1, 4, 4, 80, 8
+    LISTBOX IDC_LIST_EXCLUDED, 4, 14, 135, 90, LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON "+", IDC_BTN_ADD_EXCLUDED, 143, 14, 18, 15
+    PUSHBUTTON "-", IDC_BTN_REMOVE_EXCLUDED, 163, 14, 18, 15
+    PUSHBUTTON "Lấy app", IDC_BTN_GET_CURRENT, 143, 33, 38, 15
 
-    LTEXT "Văn bản nguồn:", -1, 7, 28, 60, 10
-    EDITTEXT IDC_EDIT_SOURCE, 7, 40, 305, 60, ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL
+    EDITTEXT IDC_EDIT_APP_NAME, 4, 108, 115, 13, ES_AUTOHSCROLL
+    PUSHBUTTON "Thêm", IDC_BTN_ADD_APP, 123, 107, 30, 15
 
-    PUSHBUTTON "Chuyển đổi", IDC_BTN_CONVERT, 130, 105, 60, 16
-
-    LTEXT "Kết quả:", -1, 7, 128, 40, 10
-    EDITTEXT IDC_EDIT_TARGET, 7, 140, 305, 50, ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL
-
-    PUSHBUTTON "Sao chép", IDC_BTN_COPY, 200, 198, 50, 14
-    PUSHBUTTON "Đóng", IDCANCEL, 260, 198, 50, 14
+    DEFPUSHBUTTON "Lưu", IDOK, 100, 127, 40, 15
+    PUSHBUTTON "Huỷ", IDCANCEL, 143, 127, 38, 15
 END
 
+// =============================================================================
+// Converter Dialog
+// =============================================================================
+IDD_CONVERTER DIALOGEX 0, 0, 225, 155
+EXSTYLE WS_EX_APPWINDOW
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ViKey - Chuyển mã"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT "Từ:", -1, 4, 6, 14, 8
+    COMBOBOX IDC_COMBO_FROM, 20, 4, 75, 80, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON "<>", IDC_BTN_SWAP, 99, 3, 18, 14
+    LTEXT "Sang:", -1, 121, 6, 22, 8
+    COMBOBOX IDC_COMBO_TO, 145, 4, 76, 80, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+
+    EDITTEXT IDC_EDIT_SOURCE, 4, 22, 217, 42, ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL
+    PUSHBUTTON "Chuyển", IDC_BTN_CONVERT, 90, 67, 45, 15
+
+    EDITTEXT IDC_EDIT_TARGET, 4, 85, 217, 42, ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL
+
+    PUSHBUTTON "Sao chép", IDC_BTN_COPY, 132, 132, 44, 15
+    PUSHBUTTON "Đóng", IDCANCEL, 180, 132, 41, 15
+END
+
+// =============================================================================
 // About Dialog
-IDD_ABOUT DIALOGEX 0, 0, 180, 130
+// =============================================================================
+IDD_ABOUT DIALOGEX 0, 0, 145, 90
+EXSTYLE WS_EX_APPWINDOW
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Giới thiệu"
-FONT 9, "Segoe UI", 400, 0, 0x1
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    ICON IDI_LOGO, IDC_STATIC_LOGO, 74, 12, 32, 32
-    CTEXT "ViKey", -1, 0, 48, 180, 12
-    CTEXT "Phiên bản 1.3.1", -1, 0, 62, 180, 10
-    CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 80, 180, 10
-    CTEXT "Ctrl+Space để chuyển ngôn ngữ", -1, 0, 94, 180, 10
-    DEFPUSHBUTTON "Đóng", IDOK, 65, 110, 50, 14
+    ICON IDI_LOGO, IDC_STATIC_LOGO, 60, 6, 21, 20
+    CTEXT "ViKey 1.3.2", -1, 0, 32, 145, 10
+    CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 44, 145, 8
+    CTEXT "~400KB • <1ms • <5MB RAM", -1, 0, 56, 145, 8
+    CTEXT "Ctrl+Space chuyển ngôn ngữ", -1, 0, 66, 145, 8
+    DEFPUSHBUTTON "Đóng", IDOK, 52, 78, 40, 12
 END
 
 // String Table

@@ -249,6 +249,19 @@ pub extern "C" fn ime_allow_foreign_consonants(enabled: bool) {
     }
 }
 
+/// Enable/disable shortcut expansion.
+///
+/// When `enabled` is true (default), shortcuts are triggered as usual.
+/// When `enabled` is false, shortcuts are not triggered.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_shortcuts_enabled(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_shortcuts_enabled(enabled);
+    }
+}
+
 /// Clear the input buffer.
 ///
 /// Call on word boundaries (space, punctuation).

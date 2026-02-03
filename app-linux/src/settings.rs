@@ -27,6 +27,7 @@ pub struct Settings {
     pub skip_w_shortcut: bool,
     pub bracket_shortcut: bool,
     pub allow_foreign_consonants: bool,
+    pub shortcuts_enabled: bool,
     pub shortcuts: Vec<Shortcut>,
 }
 
@@ -43,6 +44,7 @@ impl Default for Settings {
             skip_w_shortcut: false,
             bracket_shortcut: false,
             allow_foreign_consonants: false,
+            shortcuts_enabled: true,
             shortcuts: vec![
                 Shortcut { trigger: "vn".into(), replacement: "Việt Nam".into() },
                 Shortcut { trigger: "hn".into(), replacement: "Hà Nội".into() },
@@ -114,6 +116,7 @@ impl Settings {
             vikey_core::ime_skip_w_shortcut(self.skip_w_shortcut);
             vikey_core::ime_bracket_shortcut(self.bracket_shortcut);
             vikey_core::ime_allow_foreign_consonants(self.allow_foreign_consonants);
+            vikey_core::ime_shortcuts_enabled(self.shortcuts_enabled);
 
             // Load shortcuts
             vikey_core::ime_clear_shortcuts();
@@ -162,6 +165,9 @@ impl Settings {
         if let Some(v) = map.get("allow_foreign_consonants") {
             settings.allow_foreign_consonants = v == "true";
         }
+        if let Some(v) = map.get("shortcuts_enabled") {
+            settings.shortcuts_enabled = v == "true";
+        }
 
         // Parse shortcuts array
         if let Some(shortcuts_str) = map.get("shortcuts") {
@@ -195,6 +201,7 @@ impl Settings {
   "skip_w_shortcut": {},
   "bracket_shortcut": {},
   "allow_foreign_consonants": {},
+  "shortcuts_enabled": {},
   "shortcuts": [
     {}
   ]
@@ -209,6 +216,7 @@ impl Settings {
             self.skip_w_shortcut,
             self.bracket_shortcut,
             self.allow_foreign_consonants,
+            self.shortcuts_enabled,
             shortcuts_json.join(",\n    ")
         )
     }

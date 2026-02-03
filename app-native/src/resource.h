@@ -27,11 +27,15 @@
 #define IDM_ENC_UNICODE       211
 #define IDM_ENC_VNI           212
 #define IDM_ENC_TCVN3         213
+#define IDM_EXPORT_SHORTCUTS  214
+#define IDM_IMPORT_SHORTCUTS  215
+#define IDM_SHORTCUTS         216
 
 // Dialog IDs
 #define IDD_SETTINGS          300
 #define IDD_ABOUT             301
 #define IDD_EXCLUDE_APPS      302
+#define IDD_SHORTCUTS         304
 
 // Exclude Apps Dialog Controls (Feature 3)
 #define IDC_LIST_EXCLUDED         430
@@ -39,6 +43,7 @@
 #define IDC_BTN_REMOVE_EXCLUDED   432
 #define IDC_BTN_GET_CURRENT       433
 #define IDC_EDIT_APP_NAME         434
+#define IDC_BTN_ADD_APP           435
 
 // Converter Dialog Controls (Feature 6)
 #define IDD_CONVERTER             303
@@ -54,6 +59,8 @@
 #define IDC_CHECK_ENABLED     400
 #define IDC_RADIO_TELEX       401
 #define IDC_RADIO_VNI         402
+#define IDC_COMBO_METHOD      453
+#define IDC_CHECK_SHORTCUT_ENABLED 454
 #define IDC_CHECK_MODERN      403
 #define IDC_CHECK_AUTORESTORE 404
 #define IDC_CHECK_AUTOCAP     405
@@ -72,6 +79,12 @@
 #define IDC_EDIT_VALUE        414
 #define IDC_BTN_ADD           415
 #define IDC_BTN_REMOVE        416
+#define IDC_BTN_EXPORT_SC     417
+#define IDC_BTN_IMPORT_SC     418
+#define IDC_BTN_DEFAULT       419
+#define IDC_BTN_SHORTCUTS     450
+#define IDC_BTN_EXCLUDE       451
+#define IDC_BTN_CONVERTER     452
 #define IDC_BTN_OK            IDOK
 #define IDC_BTN_CANCEL        IDCANCEL
 

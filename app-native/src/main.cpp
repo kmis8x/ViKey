@@ -12,6 +12,13 @@
 #include <commctrl.h>
 #include <commdlg.h>
 #include <shobjidl.h>
+#include <shellscalingapi.h>
+#include <dwmapi.h>
+#include <uxtheme.h>
+
+#pragma comment(lib, "shcore.lib")
+#pragma comment(lib, "dwmapi.lib")
+#pragma comment(lib, "uxtheme.lib")
 
 #include "resource.h"
 #include "ime_processor.h"
@@ -26,7 +33,7 @@
 
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "gdiplus.lib")
-#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+// Manifest is now embedded via resource.rc (includes Common Controls + DPI awareness)
 
 // Application name and class
 constexpr const wchar_t* APP_NAME = L"ViKey";
@@ -40,6 +47,46 @@ constexpr UINT WM_TRAYICON_MSG = WM_USER + 1;
 HINSTANCE g_hInstance = nullptr;
 HWND g_hWnd = nullptr;
 ULONG_PTR g_gdiplusToken = 0;
+
+// Dark mode support
+bool g_isDarkMode = false;
+HBRUSH g_hDarkBrush = nullptr;
+HBRUSH g_hDarkEditBrush = nullptr;
+constexpr COLORREF DARK_BG_COLOR = RGB(32, 32, 32);
+constexpr COLORREF DARK_EDIT_BG = RGB(45, 45, 45);
+constexpr COLORREF DARK_TEXT_COLOR = RGB(255, 255, 255);
+
+// Undocumented dark mode APIs from uxtheme.dll
+enum PreferredAppMode { Default, AllowDark, ForceDark, ForceLight, Max };
+typedef PreferredAppMode (WINAPI *fnSetPreferredAppMode)(PreferredAppMode appMode);
+typedef BOOL (WINAPI *fnAllowDarkModeForWindow)(HWND hWnd, BOOL allow);
+typedef void (WINAPI *fnRefreshImmersiveColorPolicyState)();
+typedef void (WINAPI *fnFlushMenuThemes)();
+
+fnSetPreferredAppMode SetPreferredAppMode = nullptr;
+fnAllowDarkModeForWindow AllowDarkModeForWindow = nullptr;
+fnRefreshImmersiveColorPolicyState RefreshImmersiveColorPolicyState = nullptr;
+fnFlushMenuThemes FlushMenuThemes = nullptr;
+
+void InitDarkModeAPIs() {
+    HMODULE hUxTheme = LoadLibraryW(L"uxtheme.dll");
+    if (hUxTheme) {
+        SetPreferredAppMode = (fnSetPreferredAppMode)GetProcAddress(hUxTheme, MAKEINTRESOURCEA(135));
+        AllowDarkModeForWindow = (fnAllowDarkModeForWindow)GetProcAddress(hUxTheme, MAKEINTRESOURCEA(133));
+        RefreshImmersiveColorPolicyState = (fnRefreshImmersiveColorPolicyState)GetProcAddress(hUxTheme, MAKEINTRESOURCEA(104));
+        FlushMenuThemes = (fnFlushMenuThemes)GetProcAddress(hUxTheme, MAKEINTRESOURCEA(136));
+
+        if (SetPreferredAppMode) {
+            SetPreferredAppMode(AllowDark);
+        }
+        if (RefreshImmersiveColorPolicyState) {
+            RefreshImmersiveColorPolicyState();
+        }
+        if (FlushMenuThemes) {
+            FlushMenuThemes();
+        }
+    }
+}
 
 // Forward declarations
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -56,6 +103,26 @@ void ShowExcludeAppsDialog();
 INT_PTR CALLBACK ExcludeAppsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void ShowConverterDialog();
 INT_PTR CALLBACK ConverterDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+void ShowShortcutsDialog();
+INT_PTR CALLBACK ShortcutsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+
+// DPI helper - get scaling factor for current monitor
+float GetDpiScale(HWND hWnd) {
+    UINT dpi = 96;
+    HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
+    if (hUser32) {
+        typedef UINT (WINAPI *GetDpiForWindowFunc)(HWND);
+        auto pGetDpiForWindow = (GetDpiForWindowFunc)GetProcAddress(hUser32, "GetDpiForWindow");
+        if (pGetDpiForWindow && hWnd) {
+            dpi = pGetDpiForWindow(hWnd);
+        } else {
+            HDC hdc = GetDC(nullptr);
+            dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+            ReleaseDC(nullptr, hdc);
+        }
+    }
+    return dpi / 96.0f;
+}
 
 // Entry point
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -65,6 +132,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
+
+    // Enable Per-Monitor DPI awareness (Windows 10 1703+)
+    HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
+    if (hUser32) {
+        typedef BOOL (WINAPI *SetProcessDpiAwarenessContextFunc)(DPI_AWARENESS_CONTEXT);
+        auto pSetDpiContext = (SetProcessDpiAwarenessContextFunc)GetProcAddress(hUser32, "SetProcessDpiAwarenessContext");
+        if (pSetDpiContext) {
+            pSetDpiContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        } else {
+            // Fallback for Windows 8.1
+            HMODULE hShcore = LoadLibraryW(L"shcore.dll");
+            if (hShcore) {
+                typedef HRESULT (WINAPI *SetProcessDpiAwarenessFunc)(PROCESS_DPI_AWARENESS);
+                auto pSetDpi = (SetProcessDpiAwarenessFunc)GetProcAddress(hShcore, "SetProcessDpiAwareness");
+                if (pSetDpi) {
+                    pSetDpi(PROCESS_PER_MONITOR_DPI_AWARE);
+                }
+                FreeLibrary(hShcore);
+            }
+        }
+    }
+
+    // Initialize dark mode support (Windows 10 1809+)
+    InitDarkModeAPIs();
 
     // Check for single instance
     HANDLE hMutex = CreateMutexW(nullptr, TRUE, MUTEX_NAME);
@@ -326,6 +417,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             ShowExcludeAppsDialog();
             break;
 
+        case IDM_SHORTCUTS:
+            ShowShortcutsDialog();
+            break;
+
         case IDM_CONVERTER:
             ShowConverterDialog();
             break;
@@ -351,19 +446,150 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 }
 
 void ShowSettingsDialog() {
+    static bool isOpen = false;
+    if (isOpen) return;  // Prevent multiple dialogs
+    isOpen = true;
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SETTINGS), g_hWnd, SettingsDialogProc);
+    isOpen = false;
 }
 
 void ShowAboutDialog() {
+    static bool isOpen = false;
+    if (isOpen) return;
+    isOpen = true;
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_ABOUT), g_hWnd, AboutDialogProc);
+    isOpen = false;
+}
+
+// Check if system dark mode is enabled
+bool IsSystemDarkMode() {
+    HKEY hKey;
+    DWORD value = 0;
+    DWORD size = sizeof(value);
+    if (RegOpenKeyExW(HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        RegQueryValueExW(hKey, L"AppsUseLightTheme", nullptr, nullptr, (LPBYTE)&value, &size);
+        RegCloseKey(hKey);
+    }
+    return value == 0;  // 0 = dark mode, 1 = light mode
+}
+
+// Handle dark mode color messages - returns TRUE if handled
+INT_PTR HandleDarkModeColors(UINT message, WPARAM wParam) {
+    if (!g_isDarkMode) return FALSE;
+
+    switch (message) {
+    case WM_CTLCOLORDLG:
+        return (INT_PTR)g_hDarkBrush;
+
+    case WM_CTLCOLORSTATIC: {
+        HDC hdc = (HDC)wParam;
+        SetTextColor(hdc, DARK_TEXT_COLOR);
+        SetBkColor(hdc, DARK_BG_COLOR);
+        return (INT_PTR)g_hDarkBrush;
+    }
+
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX: {
+        HDC hdc = (HDC)wParam;
+        SetTextColor(hdc, DARK_TEXT_COLOR);
+        SetBkColor(hdc, DARK_EDIT_BG);
+        return (INT_PTR)g_hDarkEditBrush;
+    }
+
+    case WM_CTLCOLORBTN: {
+        HDC hdc = (HDC)wParam;
+        SetTextColor(hdc, DARK_TEXT_COLOR);
+        SetBkColor(hdc, DARK_BG_COLOR);
+        return (INT_PTR)g_hDarkBrush;
+    }
+    }
+    return FALSE;
+}
+
+// Enable dark mode for dialog (Windows 10 1809+)
+void EnableDarkModeForDialog(HWND hDlg) {
+    g_isDarkMode = IsSystemDarkMode();
+
+    if (g_isDarkMode) {
+        // Allow dark mode for this window
+        if (AllowDarkModeForWindow) {
+            AllowDarkModeForWindow(hDlg, TRUE);
+        }
+
+        // DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(hDlg, 20, &darkMode, sizeof(darkMode));
+
+        // Create dark mode brushes if not already created
+        if (!g_hDarkBrush) {
+            g_hDarkBrush = CreateSolidBrush(DARK_BG_COLOR);
+        }
+        if (!g_hDarkEditBrush) {
+            g_hDarkEditBrush = CreateSolidBrush(DARK_EDIT_BG);
+        }
+
+        // Apply dark theme to all child controls
+        EnumChildWindows(hDlg, [](HWND hChild, LPARAM) -> BOOL {
+            if (AllowDarkModeForWindow) {
+                AllowDarkModeForWindow(hChild, TRUE);
+            }
+            wchar_t className[64] = {};
+            GetClassNameW(hChild, className, 64);
+            if (_wcsicmp(className, L"Button") == 0) {
+                // Use DarkMode_Explorer for buttons and checkboxes
+                SetWindowTheme(hChild, L"Explorer", nullptr);
+            } else if (_wcsicmp(className, L"ComboBox") == 0) {
+                SetWindowTheme(hChild, L"DarkMode_CFD", nullptr);
+            } else if (_wcsicmp(className, L"Edit") == 0) {
+                SetWindowTheme(hChild, L"DarkMode_CFD", nullptr);
+            } else if (_wcsicmp(className, L"SysListView32") == 0) {
+                SetWindowTheme(hChild, L"DarkMode_Explorer", nullptr);
+            } else if (_wcsicmp(className, L"ListBox") == 0) {
+                SetWindowTheme(hChild, L"DarkMode_Explorer", nullptr);
+            } else {
+                SetWindowTheme(hChild, L"DarkMode_Explorer", nullptr);
+            }
+            return TRUE;
+        }, 0);
+
+        // Send theme change notification
+        SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
+    }
+}
+
+// Center dialog on screen
+void CenterDialog(HWND hDlg) {
+    RECT dlgRect;
+    GetWindowRect(hDlg, &dlgRect);
+    int dlgWidth = dlgRect.right - dlgRect.left;
+    int dlgHeight = dlgRect.bottom - dlgRect.top;
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    int x = (screenWidth - dlgWidth) / 2;
+    int y = (screenHeight - dlgHeight) / 2;
+    SetWindowPos(hDlg, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+}
+
+// Scale dialog for DPI and enable dark mode
+void ScaleDialogForDpi(HWND hDlg) {
+    EnableDarkModeForDialog(hDlg);
+    CenterDialog(hDlg);
 }
 
 // Settings dialog helper functions
 void InitSettingsDialog(HWND hDlg) {
     Settings& settings = Settings::Instance();
 
+    // Set title like EVKey style with icon
+    SetWindowTextW(hDlg, L"ViKey x64 - 1.3.2 - Nh\u1EB9, nhanh, chu\u1EA9n Vi\u1EC7t");
+    // Set dialog icon (shows in title bar)
+    HICON hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(IDI_LOGO));
+    SendMessageW(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+    SendMessageW(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
     // Fix Vietnamese text (resource file encoding workaround)
-    SetWindowTextW(hDlg, L"C\u00E0i \u0111\u1EB7t");  // Cài đặt
     SetDlgItemTextW(hDlg, IDC_CHECK_MODERN, L"B\u1ECF d\u1EA5u ki\u1EC3u m\u1EDBi");  // Bỏ dấu kiểu mới
     SetDlgItemTextW(hDlg, IDC_CHECK_AUTORESTORE, L"T\u1EF1 \u0111\u1ED9ng kh\u00F4i ph\u1EE5c ti\u1EBFng Anh");
     SetDlgItemTextW(hDlg, IDC_CHECK_AUTOCAP, L"T\u1EF1 \u0111\u1ED9ng vi\u1EBFt hoa");
@@ -377,14 +603,18 @@ void InitSettingsDialog(HWND hDlg) {
     SetDlgItemTextW(hDlg, IDC_CHECK_SMARTSWITCH, L"Nh\u1EDB theo \u1EE9ng d\u1EE5ng");
     SetDlgItemTextW(hDlg, IDC_CHECK_AUTOSTART, L"Kh\u1EDFi \u0111\u1ED9ng c\u00F9ng Windows");
     SetDlgItemTextW(hDlg, IDC_CHECK_SILENT, L"\u1EA8n khi kh\u1EDFi \u0111\u1ED9ng");
-    SetDlgItemTextW(hDlg, IDC_BTN_ADD, L"Th\u00EAm");
-    SetDlgItemTextW(hDlg, IDC_BTN_REMOVE, L"Xo\u00E1");
+    SetDlgItemTextW(hDlg, IDC_CHECK_SHORTCUT_ENABLED, L"Cho ph\u00E9p g\u00F5 t\u1EAFt");
     SetDlgItemTextW(hDlg, IDC_BTN_OK, L"L\u01B0u");
     SetDlgItemTextW(hDlg, IDC_BTN_CANCEL, L"Hu\u1EF7");
 
-    // Input method
-    CheckRadioButton(hDlg, IDC_RADIO_TELEX, IDC_RADIO_VNI,
-                     settings.method == InputMethod::Telex ? IDC_RADIO_TELEX : IDC_RADIO_VNI);
+    // Input method combobox
+    HWND hComboMethod = GetDlgItem(hDlg, IDC_COMBO_METHOD);
+    SendMessageW(hComboMethod, CB_ADDSTRING, 0, (LPARAM)L"Telex");
+    SendMessageW(hComboMethod, CB_ADDSTRING, 0, (LPARAM)L"VNI");
+    SendMessageW(hComboMethod, CB_SETCURSEL, settings.method == InputMethod::Telex ? 0 : 1, 0);
+
+    // Shortcuts enabled
+    CheckDlgButton(hDlg, IDC_CHECK_SHORTCUT_ENABLED, settings.shortcutsEnabled ? BST_CHECKED : BST_UNCHECKED);
 
     // Checkboxes
     CheckDlgButton(hDlg, IDC_CHECK_MODERN, settings.modernTone ? BST_CHECKED : BST_UNCHECKED);
@@ -417,42 +647,18 @@ void InitSettingsDialog(HWND hDlg) {
         hotkeyChar[0] = static_cast<wchar_t>(settings.toggleHotkey.vkCode);
     }
     SetDlgItemTextW(hDlg, IDC_EDIT_HOTKEY, hotkeyChar);
-
-    // Initialize ListView for shortcuts
-    HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
-
-    // Set extended styles
-    ListView_SetExtendedListViewStyle(hList, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-
-    // Add columns
-    LVCOLUMNW col = {};
-    col.mask = LVCF_TEXT | LVCF_WIDTH;
-
-    col.pszText = (LPWSTR)L"T\u1EAFt";
-    col.cx = 80;
-    ListView_InsertColumn(hList, 0, &col);
-
-    col.pszText = (LPWSTR)L"\u0110\u1EA7y \u0111\u1EE7";
-    col.cx = 200;
-    ListView_InsertColumn(hList, 1, &col);
-
-    // Add shortcuts to list
-    for (size_t i = 0; i < settings.shortcuts.size(); i++) {
-        LVITEMW item = {};
-        item.mask = LVIF_TEXT;
-        item.iItem = static_cast<int>(i);
-        item.pszText = (LPWSTR)settings.shortcuts[i].key.c_str();
-        ListView_InsertItem(hList, &item);
-        ListView_SetItemText(hList, static_cast<int>(i), 1, (LPWSTR)settings.shortcuts[i].value.c_str());
-    }
 }
 
 void SaveSettingsFromDialog(HWND hDlg) {
     Settings& settings = Settings::Instance();
 
-    // Input method
-    settings.method = IsDlgButtonChecked(hDlg, IDC_RADIO_TELEX) == BST_CHECKED ?
-                      InputMethod::Telex : InputMethod::VNI;
+    // Input method from combobox
+    HWND hComboMethod = GetDlgItem(hDlg, IDC_COMBO_METHOD);
+    int methodIdx = (int)SendMessageW(hComboMethod, CB_GETCURSEL, 0, 0);
+    settings.method = (methodIdx == 0) ? InputMethod::Telex : InputMethod::VNI;
+
+    // Shortcuts enabled
+    settings.shortcutsEnabled = IsDlgButtonChecked(hDlg, IDC_CHECK_SHORTCUT_ENABLED) == BST_CHECKED;
 
     // Checkboxes
     settings.modernTone = IsDlgButtonChecked(hDlg, IDC_CHECK_MODERN) == BST_CHECKED;
@@ -488,23 +694,6 @@ void SaveSettingsFromDialog(HWND hDlg) {
         settings.toggleHotkey.vkCode = static_cast<UINT>(hotkeyChar[0]);
     }
 
-    // Get shortcuts from ListView
-    HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
-    int count = ListView_GetItemCount(hList);
-
-    settings.shortcuts.clear();
-    for (int i = 0; i < count; i++) {
-        wchar_t key[64] = {};
-        wchar_t value[256] = {};
-
-        ListView_GetItemText(hList, i, 0, key, 64);
-        ListView_GetItemText(hList, i, 1, value, 256);
-
-        if (wcslen(key) > 0 && wcslen(value) > 0) {
-            settings.shortcuts.push_back({key, value});
-        }
-    }
-
     // Save to registry
     settings.Save();
 
@@ -518,44 +707,29 @@ void SaveSettingsFromDialog(HWND hDlg) {
 }
 
 INT_PTR CALLBACK SettingsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    // Handle dark mode colors
+    INT_PTR darkResult = HandleDarkModeColors(message, wParam);
+    if (darkResult) return darkResult;
+
     switch (message) {
     case WM_INITDIALOG:
         InitSettingsDialog(hDlg);
+        ScaleDialogForDpi(hDlg);
         return TRUE;
 
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
-        case IDC_BTN_ADD: {
-            wchar_t key[64] = {};
-            wchar_t value[256] = {};
-            GetDlgItemTextW(hDlg, IDC_EDIT_KEY, key, 64);
-            GetDlgItemTextW(hDlg, IDC_EDIT_VALUE, value, 256);
-
-            if (wcslen(key) > 0 && wcslen(value) > 0) {
-                HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
-                int idx = ListView_GetItemCount(hList);
-
-                LVITEMW item = {};
-                item.mask = LVIF_TEXT;
-                item.iItem = idx;
-                item.pszText = key;
-                ListView_InsertItem(hList, &item);
-                ListView_SetItemText(hList, idx, 1, value);
-
-                SetDlgItemTextW(hDlg, IDC_EDIT_KEY, L"");
-                SetDlgItemTextW(hDlg, IDC_EDIT_VALUE, L"");
-            }
+        case IDC_BTN_SHORTCUTS:
+            ShowShortcutsDialog();
             return TRUE;
-        }
 
-        case IDC_BTN_REMOVE: {
-            HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
-            int sel = ListView_GetNextItem(hList, -1, LVNI_SELECTED);
-            if (sel >= 0) {
-                ListView_DeleteItem(hList, sel);
-            }
+        case IDC_BTN_EXCLUDE:
+            ShowExcludeAppsDialog();
             return TRUE;
-        }
+
+        case IDC_BTN_CONVERTER:
+            ShowConverterDialog();
+            return TRUE;
 
         case IDOK:
             SaveSettingsFromDialog(hDlg);
@@ -574,8 +748,13 @@ INT_PTR CALLBACK SettingsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(lParam);
 
+    // Handle dark mode colors
+    INT_PTR darkResult = HandleDarkModeColors(message, wParam);
+    if (darkResult) return darkResult;
+
     switch (message) {
     case WM_INITDIALOG:
+        ScaleDialogForDpi(hDlg);
         return TRUE;
 
     case WM_COMMAND:
@@ -641,14 +820,23 @@ void ImportSettings() {
 
 // Exclude Apps Dialog (Feature 3)
 void ShowExcludeAppsDialog() {
+    static bool isOpen = false;
+    if (isOpen) return;
+    isOpen = true;
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_EXCLUDE_APPS), g_hWnd, ExcludeAppsDialogProc);
+    isOpen = false;
 }
 
 INT_PTR CALLBACK ExcludeAppsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(lParam);
 
+    // Handle dark mode colors
+    INT_PTR darkResult = HandleDarkModeColors(message, wParam);
+    if (darkResult) return darkResult;
+
     switch (message) {
     case WM_INITDIALOG: {
+        ScaleDialogForDpi(hDlg);
         // Set Vietnamese text
         SetWindowTextW(hDlg, L"Lo\u1EA1i tr\u1EEB \u1EE9ng d\u1EE5ng");
         SetDlgItemTextW(hDlg, IDC_BTN_GET_CURRENT, L"L\u1EA5y app\nhi\u1EC7n t\u1EA1i");
@@ -726,14 +914,23 @@ INT_PTR CALLBACK ExcludeAppsDialogProc(HWND hDlg, UINT message, WPARAM wParam, L
 
 // Converter Dialog (Feature 6)
 void ShowConverterDialog() {
+    static bool isOpen = false;
+    if (isOpen) return;
+    isOpen = true;
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_CONVERTER), g_hWnd, ConverterDialogProc);
+    isOpen = false;
 }
 
 INT_PTR CALLBACK ConverterDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(lParam);
 
+    // Handle dark mode colors
+    INT_PTR darkResult = HandleDarkModeColors(message, wParam);
+    if (darkResult) return darkResult;
+
     switch (message) {
     case WM_INITDIALOG: {
+        ScaleDialogForDpi(hDlg);
         // Set Vietnamese text
         SetWindowTextW(hDlg, L"Chuy\u1EC3n m\u00E3 ti\u1EBFng Vi\u1EC7t");
         SetDlgItemTextW(hDlg, IDC_BTN_CONVERT, L"Chuy\u1EC3n \u0111\u1ED5i");
@@ -817,6 +1014,245 @@ INT_PTR CALLBACK ConverterDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPA
             return TRUE;
         }
         break;
+    }
+    return FALSE;
+}
+
+// Shortcuts Dialog (Gõ tắt)
+void ShowShortcutsDialog() {
+    static bool isOpen = false;
+    if (isOpen) return;
+    isOpen = true;
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SHORTCUTS), g_hWnd, ShortcutsDialogProc);
+    isOpen = false;
+}
+
+void InitShortcutsListView(HWND hList) {
+    ListView_SetExtendedListViewStyle(hList, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+
+    // Set dark mode colors for ListView
+    if (g_isDarkMode) {
+        ListView_SetBkColor(hList, RGB(32, 32, 32));
+        ListView_SetTextBkColor(hList, RGB(32, 32, 32));
+        ListView_SetTextColor(hList, RGB(255, 255, 255));
+    }
+
+    LVCOLUMNW col = {};
+    col.mask = LVCF_TEXT | LVCF_WIDTH;
+
+    col.pszText = (LPWSTR)L"T\u1EAFt";
+    col.cx = 55;
+    ListView_InsertColumn(hList, 0, &col);
+
+    col.pszText = (LPWSTR)L"Thay th\u1EBF";
+    col.cx = 155;
+    ListView_InsertColumn(hList, 1, &col);
+
+    // Load shortcuts from settings
+    for (size_t i = 0; i < Settings::Instance().shortcuts.size(); i++) {
+        LVITEMW item = {};
+        item.mask = LVIF_TEXT;
+        item.iItem = static_cast<int>(i);
+        item.pszText = (LPWSTR)Settings::Instance().shortcuts[i].key.c_str();
+        ListView_InsertItem(hList, &item);
+        ListView_SetItemText(hList, static_cast<int>(i), 1, (LPWSTR)Settings::Instance().shortcuts[i].value.c_str());
+    }
+}
+
+INT_PTR CALLBACK ShortcutsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    UNREFERENCED_PARAMETER(lParam);
+
+    // Handle dark mode colors
+    INT_PTR darkResult = HandleDarkModeColors(message, wParam);
+    if (darkResult) return darkResult;
+
+    switch (message) {
+    case WM_INITDIALOG: {
+        ScaleDialogForDpi(hDlg);
+        SetWindowTextW(hDlg, L"G\u00F5 t\u1EAFt - ViKey");
+        SetDlgItemTextW(hDlg, IDC_BTN_ADD, L"+");
+        SetDlgItemTextW(hDlg, IDC_BTN_REMOVE, L"-");
+        SetDlgItemTextW(hDlg, IDC_BTN_DEFAULT, L"M\u1EB7c \u0111\u1ECBnh");
+        SetDlgItemTextW(hDlg, IDC_BTN_EXPORT_SC, L"Xu\u1EA5t...");
+        SetDlgItemTextW(hDlg, IDC_BTN_IMPORT_SC, L"Nh\u1EADp...");
+        SetDlgItemTextW(hDlg, IDC_BTN_OK, L"L\u01B0u");
+        SetDlgItemTextW(hDlg, IDC_BTN_CANCEL, L"Hu\u1EF7");
+
+        HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+        InitShortcutsListView(hList);
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDC_BTN_ADD: {
+            wchar_t key[64] = {};
+            wchar_t value[256] = {};
+            GetDlgItemTextW(hDlg, IDC_EDIT_KEY, key, 64);
+            GetDlgItemTextW(hDlg, IDC_EDIT_VALUE, value, 256);
+
+            if (wcslen(key) > 0 && wcslen(value) > 0) {
+                HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+                int idx = ListView_GetItemCount(hList);
+
+                LVITEMW item = {};
+                item.mask = LVIF_TEXT;
+                item.iItem = idx;
+                item.pszText = key;
+                ListView_InsertItem(hList, &item);
+                ListView_SetItemText(hList, idx, 1, value);
+
+                SetDlgItemTextW(hDlg, IDC_EDIT_KEY, L"");
+                SetDlgItemTextW(hDlg, IDC_EDIT_VALUE, L"");
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_REMOVE: {
+            HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+            int sel = ListView_GetNextItem(hList, -1, LVNI_SELECTED);
+            if (sel >= 0) {
+                ListView_DeleteItem(hList, sel);
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_DEFAULT: {
+            if (MessageBoxW(hDlg, L"Kh\u00F4i ph\u1EE5c danh s\u00E1ch g\u00F5 t\u1EAFt m\u1EB7c \u0111\u1ECBnh?",
+                           L"X\u00E1c nh\u1EADn", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+                HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+                ListView_DeleteAllItems(hList);
+                auto defaults = Settings::DefaultShortcuts();
+                for (size_t i = 0; i < defaults.size(); i++) {
+                    LVITEMW item = {};
+                    item.mask = LVIF_TEXT;
+                    item.iItem = static_cast<int>(i);
+                    item.pszText = (LPWSTR)defaults[i].key.c_str();
+                    ListView_InsertItem(hList, &item);
+                    ListView_SetItemText(hList, static_cast<int>(i), 1, (LPWSTR)defaults[i].value.c_str());
+                }
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_EXPORT_SC: {
+            HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+            int count = ListView_GetItemCount(hList);
+            Settings::Instance().shortcuts.clear();
+            for (int i = 0; i < count; i++) {
+                wchar_t key[64] = {};
+                wchar_t value[256] = {};
+                ListView_GetItemText(hList, i, 0, key, 64);
+                ListView_GetItemText(hList, i, 1, value, 256);
+                if (wcslen(key) > 0 && wcslen(value) > 0) {
+                    Settings::Instance().shortcuts.push_back({key, value});
+                }
+            }
+
+            wchar_t filePath[MAX_PATH] = L"vikey-shortcuts.json";
+            OPENFILENAMEW ofn = {};
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hDlg;
+            ofn.lpstrFilter = L"JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+            ofn.lpstrFile = filePath;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.lpstrTitle = L"Xu\u1EA5t g\u00F5 t\u1EAFt";
+            ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+            ofn.lpstrDefExt = L"json";
+
+            if (GetSaveFileNameW(&ofn)) {
+                if (Settings::ExportShortcutsToFile(filePath)) {
+                    MessageBoxW(hDlg, L"\u0110\u00E3 xu\u1EA5t th\u00E0nh c\u00F4ng!", L"Th\u00E0nh c\u00F4ng", MB_ICONINFORMATION);
+                } else {
+                    MessageBoxW(hDlg, L"Kh\u00F4ng th\u1EC3 l\u01B0u file", L"L\u1ED7i", MB_ICONERROR);
+                }
+            }
+            return TRUE;
+        }
+
+        case IDC_BTN_IMPORT_SC: {
+            wchar_t filePath[MAX_PATH] = L"";
+            OPENFILENAMEW ofn = {};
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hDlg;
+            ofn.lpstrFilter = L"JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+            ofn.lpstrFile = filePath;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.lpstrTitle = L"Nh\u1EADp g\u00F5 t\u1EAFt";
+            ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+            if (GetOpenFileNameW(&ofn)) {
+                if (Settings::ImportShortcutsFromFile(filePath)) {
+                    HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+                    ListView_DeleteAllItems(hList);
+                    for (size_t i = 0; i < Settings::Instance().shortcuts.size(); i++) {
+                        LVITEMW item = {};
+                        item.mask = LVIF_TEXT;
+                        item.iItem = static_cast<int>(i);
+                        item.pszText = (LPWSTR)Settings::Instance().shortcuts[i].key.c_str();
+                        ListView_InsertItem(hList, &item);
+                        ListView_SetItemText(hList, static_cast<int>(i), 1, (LPWSTR)Settings::Instance().shortcuts[i].value.c_str());
+                    }
+                    MessageBoxW(hDlg, L"\u0110\u00E3 nh\u1EADp th\u00E0nh c\u00F4ng!", L"Th\u00E0nh c\u00F4ng", MB_ICONINFORMATION);
+                } else {
+                    MessageBoxW(hDlg, L"File kh\u00F4ng h\u1EE3p l\u1EC7", L"L\u1ED7i", MB_ICONERROR);
+                }
+            }
+            return TRUE;
+        }
+
+        case IDOK: {
+            HWND hList = GetDlgItem(hDlg, IDC_LIST_SHORTCUTS);
+            int count = ListView_GetItemCount(hList);
+
+            Settings::Instance().shortcuts.clear();
+            for (int i = 0; i < count; i++) {
+                wchar_t key[64] = {};
+                wchar_t value[256] = {};
+                ListView_GetItemText(hList, i, 0, key, 64);
+                ListView_GetItemText(hList, i, 1, value, 256);
+                if (wcslen(key) > 0 && wcslen(value) > 0) {
+                    Settings::Instance().shortcuts.push_back({key, value});
+                }
+            }
+
+            Settings::Instance().Save();
+            ImeProcessor::Instance().ApplySettings();
+            EndDialog(hDlg, IDOK);
+            return TRUE;
+        }
+
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            return TRUE;
+        }
+        break;
+
+    case WM_NOTIFY: {
+        LPNMHDR pnmh = (LPNMHDR)lParam;
+        if (pnmh->idFrom == IDC_LIST_SHORTCUTS && pnmh->code == NM_CUSTOMDRAW) {
+            LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
+            switch (lplvcd->nmcd.dwDrawStage) {
+            case CDDS_PREPAINT:
+                return CDRF_NOTIFYITEMDRAW;
+
+            case CDDS_ITEMPREPAINT: {
+                int iRow = (int)lplvcd->nmcd.dwItemSpec;
+                if (g_isDarkMode) {
+                    // Alternating row colors for dark mode
+                    if (iRow % 2 == 0) {
+                        lplvcd->clrTextBk = RGB(45, 45, 45);
+                    } else {
+                        lplvcd->clrTextBk = RGB(32, 32, 32);
+                    }
+                    lplvcd->clrText = RGB(255, 255, 255);
+                }
+                return CDRF_NEWFONT;
+            }
+            }
+        }
+        break;
+    }
     }
     return FALSE;
 }

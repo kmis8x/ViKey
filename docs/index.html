@@ -3,155 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ViKey - Bộ gõ tiếng Việt</title>
-    <meta name="description" content="Bộ gõ tiếng Việt nhẹ, nhanh, chuẩn cho Windows, macOS và Linux">
+    <title>ViKey - Bộ gõ tiếng Việt nhẹ, nhanh, chuẩn</title>
+    <meta name="description" content="Bộ gõ tiếng Việt siêu nhẹ (~400KB), độ trễ <1ms cho Windows, macOS và Linux. Hỗ trợ Telex, VNI, gõ tắt và chuyển mã.">
+    <link rel="icon" href="V.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        dark: '#0F172A',
+                        light: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            min-height: 100vh;
-        }
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        .hero { text-align: center; padding: 60px 0; }
-        .logo { width: 128px; height: 128px; margin-bottom: 24px; }
-        h1 { font-size: 3rem; margin-bottom: 16px; }
-        .tagline { font-size: 1.25rem; color: #a0aec0; margin-bottom: 32px; }
-        .version {
-            display: inline-block;
-            background: #0078d4;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            margin-bottom: 32px;
-        }
-        .download-btn {
-            display: inline-block;
-            background: #0078d4;
-            color: #fff;
-            padding: 16px 48px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 1.125rem;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-        .download-btn:hover { background: #106ebe; }
-        .platforms {
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin-top: 24px;
-            flex-wrap: wrap;
-        }
-        .platform {
-            background: rgba(255,255,255,0.1);
-            padding: 12px 24px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #fff;
-            transition: background 0.2s;
-        }
-        .platform:hover { background: rgba(255,255,255,0.2); }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-            margin-top: 60px;
-        }
-        .feature {
-            background: rgba(255,255,255,0.05);
-            padding: 24px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .feature h3 { margin-bottom: 8px; color: #0078d4; }
-        .feature p { color: #a0aec0; line-height: 1.6; }
-        .keytable { margin-top: 60px; }
-        .keytable h2 { text-align: center; margin-bottom: 24px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        th { color: #0078d4; }
-        code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
-        footer {
-            text-align: center;
-            margin-top: 60px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            color: #a0aec0;
-        }
-        footer a { color: #0078d4; text-decoration: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .gradient-hero { background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%); }
+        .glass-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(37, 99, 235, 0.15); }
+        .stat-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .badge-glow { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="hero">
-            <img src="V.png" alt="ViKey Logo" class="logo">
-            <h1>ViKey</h1>
-            <p class="tagline">Bộ gõ tiếng Việt nhẹ, nhanh, chuẩn</p>
-            <span class="version">v1.3.1</span>
-            <br><br>
-            <a href="https://github.com/kmis8x/ViKey/releases/latest" class="download-btn">
-                Tải về Windows
+<body class="bg-dark text-white antialiased">
+
+    <!-- Floating Navbar -->
+    <nav class="fixed top-4 left-4 right-4 z-50">
+        <div class="max-w-6xl mx-auto glass-card rounded-2xl px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="V.png" alt="ViKey" class="w-8 h-8">
+                <span class="font-bold text-lg">ViKey</span>
+                <span class="bg-accent/20 text-accent text-xs font-semibold px-2 py-0.5 rounded-full">v1.3.2</span>
+            </div>
+            <div class="hidden md:flex items-center gap-6 text-sm text-gray-400">
+                <a href="#features" class="hover:text-white transition-colors cursor-pointer">Tính năng</a>
+                <a href="#platforms" class="hover:text-white transition-colors cursor-pointer">Nền tảng</a>
+                <a href="#keytable" class="hover:text-white transition-colors cursor-pointer">Bảng phím</a>
+                <a href="https://github.com/nicekid1/ViKey" class="hover:text-white transition-colors cursor-pointer">GitHub</a>
+            </div>
+            <a href="https://github.com/nicekid1/ViKey/releases/latest" class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                Tải về
             </a>
-            <div class="platforms">
-                <a href="https://github.com/kmis8x/ViKey/releases/latest" class="platform">Windows 64-bit</a>
-                <a href="https://github.com/kmis8x/ViKey/releases/latest" class="platform">macOS (Apple Silicon)</a>
-                <a href="https://github.com/kmis8x/ViKey/releases/latest" class="platform">Linux (IBus)</a>
-            </div>
         </div>
+    </nav>
 
-        <div class="features">
-            <div class="feature">
-                <h3>Telex & VNI</h3>
-                <p>Hỗ trợ đầy đủ kiểu gõ Telex và VNI. Chuyển đổi nhanh bằng Ctrl+Space.</p>
+    <!-- Hero Section -->
+    <section class="gradient-hero min-h-screen flex items-center pt-20">
+        <div class="max-w-6xl mx-auto px-6 py-20 text-center">
+            <!-- Trust Badges -->
+            <div class="flex justify-center gap-4 mb-8">
+                <span class="glass-card px-3 py-1.5 rounded-full text-xs text-gray-400 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-secondary" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    Open Source
+                </span>
+                <span class="glass-card px-3 py-1.5 rounded-full text-xs text-gray-400 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-secondary" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    An toàn
+                </span>
+                <span class="glass-card px-3 py-1.5 rounded-full text-xs text-gray-400 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    BSD-3 License
+                </span>
             </div>
-            <div class="feature">
-                <h3>Siêu nhẹ</h3>
-                <p>Chỉ ~400KB, độ trễ <1ms, dùng <5MB RAM. Không làm chậm máy.</p>
-            </div>
-            <div class="feature">
-                <h3>Gõ tắt</h3>
-                <p>Tự định nghĩa gõ tắt, hỗ trợ cả dấu gạch ngang như --danger.</p>
-            </div>
-            <div class="feature">
-                <h3>Tự động khôi phục</h3>
-                <p>Từ tiếng Anh như "text", "window" tự động hoàn nguyên.</p>
-            </div>
-            <div class="feature">
-                <h3>Chuyển mã</h3>
-                <p>Chuyển đổi giữa Unicode, VNI Windows, TCVN3.</p>
-            </div>
-            <div class="feature">
-                <h3>Đa nền tảng</h3>
-                <p>Windows, macOS và Linux. Cùng trải nghiệm trên mọi hệ điều hành.</p>
-            </div>
-        </div>
 
-        <div class="keytable">
-            <h2>Bảng phím</h2>
-            <table>
-                <tr><th>Telex</th><th>VNI</th><th>Kết quả</th></tr>
-                <tr><td><code>as</code></td><td><code>a1</code></td><td>á</td></tr>
-                <tr><td><code>af</code></td><td><code>a2</code></td><td>à</td></tr>
-                <tr><td><code>ar</code></td><td><code>a3</code></td><td>ả</td></tr>
-                <tr><td><code>ax</code></td><td><code>a4</code></td><td>ã</td></tr>
-                <tr><td><code>aj</code></td><td><code>a5</code></td><td>ạ</td></tr>
-                <tr><td><code>aa</code></td><td><code>a6</code></td><td>â</td></tr>
-                <tr><td><code>ow</code></td><td><code>o7</code></td><td>ơ</td></tr>
-                <tr><td><code>uw</code></td><td><code>u7</code></td><td>ư</td></tr>
-                <tr><td><code>dd</code></td><td><code>d9</code></td><td>đ</td></tr>
-            </table>
-        </div>
-
-        <footer>
-            <p>
-                <a href="https://github.com/kmis8x/ViKey">GitHub</a> ·
-                BSD-3-Clause License ·
-                Built with <a href="https://claude.ai/code">Claude Code</a>
+            <!-- Logo & Title -->
+            <img src="V.png" alt="ViKey Logo" class="w-32 h-32 mx-auto mb-6 drop-shadow-2xl">
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-4 bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                ViKey
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                Bộ gõ tiếng Việt <span class="text-primary font-semibold">nhẹ</span>,
+                <span class="text-secondary font-semibold">nhanh</span>,
+                <span class="text-accent font-semibold">chuẩn</span>
             </p>
-        </footer>
-    </div>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                <a href="https://github.com/nicekid1/ViKey/releases/latest" class="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all hover:scale-105 cursor-pointer inline-flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    Tải về Windows
+                </a>
+                <a href="https://github.com/nicekid1/ViKey" class="glass-card hover:bg-white/10 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all cursor-pointer inline-flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    Xem trên GitHub
+                </a>
+            </div>
+
+            <!-- Stats - Trust & Authority -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+                <div class="glass-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-primary stat-pulse">~400KB</div>
+                    <div class="text-sm text-gray-500">Kích thước</div>
+                </div>
+                <div class="glass-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-secondary stat-pulse">&lt;1ms</div>
+                    <div class="text-sm text-gray-500">Độ trễ</div>
+                </div>
+                <div class="glass-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-accent stat-pulse">&lt;5MB</div>
+                    <div class="text-sm text-gray-500">RAM</div>
+                </div>
+                <div class="glass-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-white stat-pulse">3</div>
+                    <div class="text-sm text-gray-500">Nền tảng</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section - Feature-Rich Showcase -->
+    <section id="features" class="py-20 bg-gradient-to-b from-dark to-slate-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="bg-primary/20 text-primary text-sm font-semibold px-4 py-1.5 rounded-full">Tính năng</span>
+                <h2 class="text-4xl font-bold mt-4 mb-4">Mọi thứ bạn cần</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">Được xây dựng với Rust và C++, tối ưu cho hiệu suất và độ tin cậy cao nhất</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature Card 1 -->
+                <div class="feature-card glass-card rounded-2xl p-6 transition-all duration-300 cursor-pointer">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Telex & VNI</h3>
+                    <p class="text-gray-400">Hỗ trợ đầy đủ cả hai kiểu gõ phổ biến nhất. Chuyển đổi nhanh bằng <code class="bg-white/10 px-2 py-0.5 rounded text-sm">Ctrl+Space</code></p>
+                </div>
+
+                <!-- Feature Card 2 -->
+                <div class="feature-card glass-card rounded-2xl p-6 transition-all duration-300 cursor-pointer">
+                    <div class="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Siêu nhanh</h3>
+                    <p class="text-gray-400">Độ trễ dưới 1ms, sử dụng dưới 5MB RAM. Hoàn toàn không làm chậm máy tính của bạn.</p>
+                </div>
+
+                <!-- Feature Card 3 -->
+                <div class="feature-card glass-card rounded-2xl p-6 transition-all duration-300 cursor-pointer">
+                    <div class="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Gõ tắt thông minh</h3>
+                    <p class="text-gray-400">Tự định nghĩa gõ tắt, hỗ trợ cả dấu gạch ngang. VD: <code class="bg-white/10 px-2 py-0.5 rounded text-sm">--danger</code></p>
+                </div>
+
+                <!-- Feature Card 4 -->
+                <div class="feature-card glass-card rounded-2xl p-6 transition-all duration-300 cursor-pointer">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Tự động khôi phục</h3>
+                    <p class="text-gray-400">Từ tiếng Anh như "text", "window" tự động hoàn nguyên. Nhấn ESC để khôi phục.</p>
+                </div>
+
+                <!-- Feature Card 5 -->
+                <div class="feature-card glass-card rounded-2xl p-6 transition-all duration-300 cursor-pointer">
+                    <div class="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Chuyển mã</h3>
+                    <p class="text-gray-400">Chuyển đổi giữa Unicode, VNI Windows, TCVN3 (ABC) một cách dễ dàng.</p>
+                </div>
+
+                <!-- Feature Card 6 -->
+                <div class="feature-card glass-card rounded-2xl p-6 transition-all duration-300 cursor-pointer">
+                    <div class="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Đa nền tảng</h3>
+                    <p class="text-gray-400">Windows, macOS và Linux. Cùng trải nghiệm mượt mà trên mọi hệ điều hành.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Downloads -->
+    <section id="platforms" class="py-20 bg-slate-900">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="bg-secondary/20 text-secondary text-sm font-semibold px-4 py-1.5 rounded-full">Tải về</span>
+                <h2 class="text-4xl font-bold mt-4 mb-4">Chọn nền tảng của bạn</h2>
+                <p class="text-gray-400">Hỗ trợ Windows, macOS và Linux</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Windows -->
+                <a href="https://github.com/nicekid1/ViKey/releases/latest" class="glass-card rounded-2xl p-8 text-center hover:bg-white/5 transition-all group cursor-pointer">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-primary/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Windows</h3>
+                    <p class="text-gray-400 text-sm mb-4">Windows 10/11 64-bit</p>
+                    <span class="inline-flex items-center gap-2 text-primary font-medium">
+                        Tải về
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </span>
+                </a>
+
+                <!-- macOS -->
+                <a href="https://github.com/nicekid1/ViKey/releases/latest" class="glass-card rounded-2xl p-8 text-center hover:bg-white/5 transition-all group cursor-pointer">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-gray-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">macOS</h3>
+                    <p class="text-gray-400 text-sm mb-4">Apple Silicon & Intel</p>
+                    <span class="inline-flex items-center gap-2 text-gray-400 font-medium">
+                        Tải về
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </span>
+                </a>
+
+                <!-- Linux -->
+                <a href="https://github.com/nicekid1/ViKey/releases/latest" class="glass-card rounded-2xl p-8 text-center hover:bg-white/5 transition-all group cursor-pointer">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-accent/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-10 h-10 text-accent" fill="currentColor" viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202-.169-.067-.281-.135-.392-.27a.26.26 0 00-.035-.063c.027-.3.174-.597.456-.88.28-.283.59-.437.865-.434zm4.738 5.998l-.003.006.003-.002zm-10.453.792c-.463 1.387-.463 2.747-.13 3.956a2.035 2.035 0 00.122.337l-.005-.003c-.068.135-.129.199-.195.33-.136.333-.28.465-.28.665 0 .2.144.266.144.532 0 .2-.068.468-.2.733-.136.27-.271.465-.135.665.14.199.406.265.678.332.268.068.539.068.876.199.338.133.812.466 1.351.467.27 0 .541-.069.746-.267.2-.134.264-.335.33-.601.07-.27.138-.335.274-.467.133-.133.265-.199.466-.265.2-.07.401-.135.534-.332.133-.2.134-.467 0-.867-.135-.4-.406-.666-.744-.933a4.467 4.467 0 01-.675-.531 2.49 2.49 0 01-.467-.665c-.135-.266-.266-.4-.401-.666 0-.066-.068-.133-.068-.2.068-.066.135-.132.265-.198a.653.653 0 00.267-.333c.068-.133.068-.265-.068-.4-.066-.133-.263-.265-.465-.332a1.936 1.936 0 00-.466-.133c-.262-.068-.464-.068-.666-.2-.133-.066-.198-.198-.266-.4a2.094 2.094 0 00-.268-.527c-.034-.066-.101-.132-.167-.132zm10.987.132c-.169.003-.364.135-.497.266-.134.133-.202.199-.27.399-.067.197-.066.399-.133.599l-.003.003a.3.3 0 00-.063.131c-.068.136-.202.266-.402.399-.202.133-.469.266-.668.466-.201.199-.338.466-.338.798 0 .133.03.199.064.332a.982.982 0 00.399.533c.2.135.397.265.53.465.134.2.198.467.332.666.138.2.403.265.604.332.2.067.398.067.53-.002.135-.066.203-.133.338-.333.133-.199.199-.399.198-.6 0-.199-.063-.332-.063-.532 0-.199.065-.332.129-.532.067-.2.203-.4.338-.666l.003-.004c.134-.27.193-.663.125-1.047a1.884 1.884 0 00-.474-.966 1.065 1.065 0 00-.749-.31zm-10.918.134h.025c.17 0 .333.131.465.264.133.135.199.265.265.466l.006.018.004.009.006.024c.133.467.402.8.672 1.066.269.27.535.399.735.665.204.27.335.535.135.933-.136.265-.339.4-.54.53a3.023 3.023 0 01-.6.335c-.27.064-.54.197-.61.463l-.02.003c-.092-.003-.195-.002-.305-.006l.003-.003c-.265-.007-.598-.106-.932-.2-.338-.133-.678-.27-.949-.4-.066-.066-.133-.066-.198-.133-.07.065-.135.132-.265.132-.136 0-.27-.067-.27-.267 0-.135.134-.269.134-.6 0-.334-.132-.467-.197-.733-.067-.27-.067-.532-.067-.8 0-.199.069-.465.203-.731a2.498 2.498 0 01.467-.666c.204-.2.403-.335.602-.335h.018z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Linux</h3>
+                    <p class="text-gray-400 text-sm mb-4">IBus Framework</p>
+                    <span class="inline-flex items-center gap-2 text-accent font-medium">
+                        Tải về
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Table -->
+    <section id="keytable" class="py-20 bg-dark">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="bg-accent/20 text-accent text-sm font-semibold px-4 py-1.5 rounded-full">Hướng dẫn</span>
+                <h2 class="text-4xl font-bold mt-4 mb-4">Bảng phím</h2>
+                <p class="text-gray-400">Các tổ hợp phím thường dùng</p>
+            </div>
+
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-white/5">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-primary">Telex</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-secondary">VNI</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-accent">Kết quả</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">as</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a1</code></td><td class="px-6 py-3 text-xl">á</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">af</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a2</code></td><td class="px-6 py-3 text-xl">à</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">ar</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a3</code></td><td class="px-6 py-3 text-xl">ả</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">ax</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a4</code></td><td class="px-6 py-3 text-xl">ã</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">aj</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a5</code></td><td class="px-6 py-3 text-xl">ạ</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">aa</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a6</code></td><td class="px-6 py-3 text-xl">â</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">aw</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">a8</code></td><td class="px-6 py-3 text-xl">ă</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">ow</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">o7</code></td><td class="px-6 py-3 text-xl">ơ</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">uw</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">u7</code></td><td class="px-6 py-3 text-xl">ư</td></tr>
+                        <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">dd</code></td><td class="px-6 py-3"><code class="bg-white/10 px-2 py-0.5 rounded">d9</code></td><td class="px-6 py-3 text-xl">đ</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-b from-dark to-slate-900">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-4">Sẵn sàng thử nghiệm?</h2>
+            <p class="text-gray-400 mb-8 text-lg">Tải ViKey ngay hôm nay và trải nghiệm cách gõ tiếng Việt mới.</p>
+            <a href="https://github.com/nicekid1/ViKey/releases/latest" class="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-xl text-lg font-semibold transition-all hover:scale-105 cursor-pointer inline-flex items-center gap-3">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                Tải về miễn phí
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-slate-900 border-t border-white/5">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <img src="V.png" alt="ViKey" class="w-8 h-8">
+                    <span class="font-semibold">ViKey</span>
+                    <span class="text-gray-500 text-sm">v1.3.2</span>
+                </div>
+                <div class="flex items-center gap-6 text-sm text-gray-400">
+                    <a href="https://github.com/nicekid1/ViKey" class="hover:text-white transition-colors cursor-pointer">GitHub</a>
+                    <a href="https://github.com/nicekid1/ViKey/releases" class="hover:text-white transition-colors cursor-pointer">Releases</a>
+                    <a href="https://github.com/nicekid1/ViKey/issues" class="hover:text-white transition-colors cursor-pointer">Issues</a>
+                </div>
+                <div class="text-sm text-gray-500">
+                    BSD-3-Clause License · Built with <a href="https://claude.ai/code" class="text-primary hover:underline cursor-pointer">Claude Code</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
 </body>
 </html>

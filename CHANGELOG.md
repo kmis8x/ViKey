@@ -2,6 +2,15 @@
 
 Các thay đổi đáng chú ý của dự án.
 
+## [1.3.2] - 2026-01-29
+
+### Windows
+- Thêm chức năng xuất/nhập gõ tắt riêng (Export/Import Shortcuts)
+- Tạo cửa sổ Gõ tắt riêng biệt (giống EVKey)
+- Giao diện nhỏ gọn như Unikey/EVKey (font MS Shell Dlg 8pt)
+- Thêm nút truy cập nhanh trong Cài đặt (Gõ tắt, Loại trừ, Chuyển mã)
+- Hỗ trợ DPI awareness cho các màn hình có độ phân giải cao
+
 ## [1.3.1] - 2026-01-29
 
 ### Windows

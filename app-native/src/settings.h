@@ -55,6 +55,7 @@ public:
     bool smartSwitch;    // Remember IME state per app (Feature 2)
     bool autoStart;
     bool silentStartup;  // Start minimized to tray without notification
+    bool shortcutsEnabled;  // Enable/disable text shortcuts
     std::vector<TextShortcut> shortcuts;
     std::vector<std::wstring> excludedApps;  // Apps to auto-disable (Feature 3)
     HotkeyConfig toggleHotkey;  // Configurable toggle hotkey
@@ -71,6 +72,12 @@ public:
     bool ImportFromJson(const std::wstring& json);
     static bool ExportToFile(const wchar_t* path);
     static bool ImportFromFile(const wchar_t* path);
+
+    // Import/Export shortcuts only
+    std::wstring ExportShortcutsToJson() const;
+    bool ImportShortcutsFromJson(const std::wstring& json);
+    static bool ExportShortcutsToFile(const wchar_t* path);
+    static bool ImportShortcutsFromFile(const wchar_t* path);
 
 private:
     Settings();

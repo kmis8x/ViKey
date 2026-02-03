@@ -48,6 +48,7 @@ void Settings::Load() {
     smartSwitch = GetBool(L"SmartSwitch", false);
     autoStart = GetAutoStart();
     silentStartup = GetBool(L"SilentStartup", false);
+    shortcutsEnabled = GetBool(L"ShortcutsEnabled", true);  // Default enabled
     LoadShortcuts();
     LoadExcludedApps();
 
@@ -75,6 +76,7 @@ void Settings::Save() {
     SetBool(L"SmartSwitch", smartSwitch);
     SetAutoStart(autoStart);
     SetBool(L"SilentStartup", silentStartup);
+    SetBool(L"ShortcutsEnabled", shortcutsEnabled);
     SaveShortcuts();
     SaveExcludedApps();
 
@@ -561,6 +563,116 @@ bool Settings::ImportFromFile(const wchar_t* path) {
 
     if (json.empty()) return false;
     if (!Instance().ImportFromJson(json)) return false;
+    Instance().Save();
+    return true;
+}
+
+// Export shortcuts only to JSON
+std::wstring Settings::ExportShortcutsToJson() const {
+    std::wstringstream ss;
+    ss << L"{\n";
+    ss << L"  \"version\": 1,\n";
+    ss << L"  \"shortcuts\": [\n";
+    for (size_t i = 0; i < shortcuts.size(); i++) {
+        std::wstring escapedKey, escapedValue;
+        for (wchar_t c : shortcuts[i].key) {
+            if (c == L'\\') escapedKey += L"\\\\";
+            else if (c == L'"') escapedKey += L"\\\"";
+            else escapedKey += c;
+        }
+        for (wchar_t c : shortcuts[i].value) {
+            if (c == L'\\') escapedValue += L"\\\\";
+            else if (c == L'"') escapedValue += L"\\\"";
+            else escapedValue += c;
+        }
+        ss << L"    {\"key\": \"" << escapedKey << L"\", \"value\": \"" << escapedValue << L"\"}";
+        if (i < shortcuts.size() - 1) ss << L",";
+        ss << L"\n";
+    }
+    ss << L"  ]\n";
+    ss << L"}\n";
+    return ss.str();
+}
+
+// Import shortcuts only from JSON
+bool Settings::ImportShortcutsFromJson(const std::wstring& json) {
+    int version = ExtractJsonInt(json, L"version", 0);
+    if (version != 1) return false;
+
+    std::vector<TextShortcut> newShortcuts;
+    size_t shortcutsPos = json.find(L"\"shortcuts\":");
+    if (shortcutsPos != std::wstring::npos) {
+        size_t arrStart = json.find(L"[", shortcutsPos);
+        size_t arrEnd = json.find(L"]", arrStart);
+        if (arrStart != std::wstring::npos && arrEnd != std::wstring::npos) {
+            std::wstring arrSection = json.substr(arrStart, arrEnd - arrStart + 1);
+            size_t pos = 0;
+            while ((pos = arrSection.find(L"{", pos)) != std::wstring::npos) {
+                size_t objEnd = arrSection.find(L"}", pos);
+                if (objEnd == std::wstring::npos) break;
+                std::wstring obj = arrSection.substr(pos, objEnd - pos + 1);
+                std::wstring key = ExtractJsonString(obj, L"key");
+                std::wstring value = ExtractJsonString(obj, L"value");
+                if (!key.empty() && !value.empty()) {
+                    newShortcuts.push_back({key, value});
+                }
+                pos = objEnd + 1;
+            }
+        }
+    }
+
+    if (newShortcuts.empty()) return false;
+    shortcuts = newShortcuts;
+    return true;
+}
+
+bool Settings::ExportShortcutsToFile(const wchar_t* path) {
+    std::wstring json = Instance().ExportShortcutsToJson();
+    HANDLE hFile = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) return false;
+
+    // Write BOM for UTF-16 LE
+    BYTE bom[2] = {0xFF, 0xFE};
+    DWORD written;
+    WriteFile(hFile, bom, 2, &written, nullptr);
+    WriteFile(hFile, json.c_str(), static_cast<DWORD>(json.length() * sizeof(wchar_t)), &written, nullptr);
+    CloseHandle(hFile);
+    return true;
+}
+
+bool Settings::ImportShortcutsFromFile(const wchar_t* path) {
+    HANDLE hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) return false;
+
+    DWORD fileSize = GetFileSize(hFile, nullptr);
+    if (fileSize == INVALID_FILE_SIZE || fileSize < 4) {
+        CloseHandle(hFile);
+        return false;
+    }
+
+    std::vector<BYTE> buffer(fileSize + 2);
+    DWORD bytesRead;
+    if (!ReadFile(hFile, buffer.data(), fileSize, &bytesRead, nullptr)) {
+        CloseHandle(hFile);
+        return false;
+    }
+    CloseHandle(hFile);
+    buffer[bytesRead] = 0;
+    buffer[bytesRead + 1] = 0;
+
+    std::wstring json;
+    if (buffer[0] == 0xFF && buffer[1] == 0xFE) {
+        json = reinterpret_cast<const wchar_t*>(buffer.data() + 2);
+    } else {
+        int wideLen = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, nullptr, 0);
+        if (wideLen > 0) {
+            json.resize(wideLen);
+            MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, &json[0], wideLen);
+        }
+    }
+
+    if (json.empty()) return false;
+    if (!Instance().ImportShortcutsFromJson(json)) return false;
     Instance().Save();
     return true;
 }

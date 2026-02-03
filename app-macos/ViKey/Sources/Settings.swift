@@ -26,6 +26,7 @@ class Settings {
         static let autoCapitalize = "AutoCapitalize"
         static let enabled = "Enabled"
         static let allowForeignConsonants = "AllowForeignConsonants"  // f,j,w,z as consonants
+        static let shortcutsEnabled = "ShortcutsEnabled"  // Enable/disable shortcuts
         static let shortcuts = "Shortcuts"  // Text shortcuts array
     }
 
@@ -113,6 +114,14 @@ class Settings {
         }
     }
 
+    var shortcutsEnabled: Bool {
+        get { defaults.object(forKey: Keys.shortcutsEnabled) as? Bool ?? true }
+        set {
+            defaults.set(newValue, forKey: Keys.shortcutsEnabled)
+            RustBridge.shared.setShortcutsEnabled(newValue)
+        }
+    }
+
     // MARK: - Shortcuts
 
     /// Get all text shortcuts as array of (trigger, replacement) tuples
@@ -169,6 +178,7 @@ class Settings {
             Keys.autoCapitalize: false,
             Keys.enabled: true,
             Keys.allowForeignConsonants: false,
+            Keys.shortcutsEnabled: true,
             Keys.shortcuts: [] as [[String]]
         ])
     }
@@ -184,6 +194,7 @@ class Settings {
         RustBridge.shared.setEnglishAutoRestore(englishAutoRestore)
         RustBridge.shared.setAutoCapitalize(autoCapitalize)
         RustBridge.shared.setAllowForeignConsonants(allowForeignConsonants)
+        RustBridge.shared.setShortcutsEnabled(shortcutsEnabled)
         RustBridge.shared.setEnabled(enabled)
 
         // Load shortcuts to Rust engine

@@ -354,6 +354,9 @@ pub struct Engine {
     /// Allow foreign consonants (z, w, j, f) as valid initial consonants
     /// When true, these letters are accepted as Vietnamese consonants for loanwords
     allow_foreign_consonants: bool,
+    /// Enable/disable shortcut expansion
+    /// When false, shortcuts are not triggered
+    shortcuts_enabled: bool,
 }
 
 impl Default for Engine {
@@ -400,6 +403,7 @@ impl Engine {
             auto_capitalize_used: false,
             saw_sentence_ending: false,
             allow_foreign_consonants: false, // Default: OFF
+            shortcuts_enabled: true, // Default: ON
         }
     }
 
@@ -463,6 +467,16 @@ impl Engine {
     /// Get whether foreign consonants are allowed
     pub fn allow_foreign_consonants(&self) -> bool {
         self.allow_foreign_consonants
+    }
+
+    /// Set whether shortcuts are enabled
+    pub fn set_shortcuts_enabled(&mut self, enabled: bool) {
+        self.shortcuts_enabled = enabled;
+    }
+
+    /// Get whether shortcuts are enabled
+    pub fn shortcuts_enabled(&self) -> bool {
+        self.shortcuts_enabled
     }
 
     pub fn shortcuts(&self) -> &ShortcutTable {
@@ -586,7 +600,7 @@ impl Engine {
 
             // Word boundary keys (Space, Enter): check for word shortcuts
             if key == keys::SPACE || key == keys::RETURN || key == keys::ENTER {
-                if !self.shortcut_prefix.is_empty() {
+                if self.shortcuts_enabled && !self.shortcut_prefix.is_empty() {
                     let input_method = self.current_input_method();
                     if let Some(m) = self.shortcuts.try_match_for_method(
                         &self.shortcut_prefix,
@@ -616,17 +630,19 @@ impl Engine {
                 if let Some(ch) = break_key_to_char(key, shift) {
                     self.shortcut_prefix.push(ch);
 
-                    let input_method = self.current_input_method();
-                    if let Some(m) = self.shortcuts.try_match_for_method(
-                        &self.shortcut_prefix,
-                        None,
-                        false,
-                        input_method,
-                    ) {
-                        let output: Vec<char> = m.output.chars().collect();
-                        let backspace_count = (m.backspace_count as u8).saturating_sub(1);
-                        self.shortcut_prefix.clear();
-                        return Result::send_consumed(backspace_count, &output);
+                    if self.shortcuts_enabled {
+                        let input_method = self.current_input_method();
+                        if let Some(m) = self.shortcuts.try_match_for_method(
+                            &self.shortcut_prefix,
+                            None,
+                            false,
+                            input_method,
+                        ) {
+                            let output: Vec<char> = m.output.chars().collect();
+                            let backspace_count = (m.backspace_count as u8).saturating_sub(1);
+                            self.shortcut_prefix.clear();
+                            return Result::send_consumed(backspace_count, &output);
+                        }
                     }
                     return Result::none();
                 }
@@ -755,20 +771,22 @@ impl Engine {
                     self.shortcut_prefix.push(ch);
 
                     // Check for immediate shortcut match
-                    let input_method = self.current_input_method();
-                    if let Some(m) = self.shortcuts.try_match_for_method(
-                        &self.shortcut_prefix,
-                        None,
-                        false,
-                        input_method,
-                    ) {
-                        // Found a match! Send the replacement with key_consumed flag
-                        // Note: backspace_count - 1 because current key hasn't been typed yet
-                        // Example: "->" trigger has backspace_count=2, but only '-' is on screen
-                        let output: Vec<char> = m.output.chars().collect();
-                        let backspace_count = (m.backspace_count as u8).saturating_sub(1);
-                        self.shortcut_prefix.clear();
-                        return Result::send_consumed(backspace_count, &output);
+                    if self.shortcuts_enabled {
+                        let input_method = self.current_input_method();
+                        if let Some(m) = self.shortcuts.try_match_for_method(
+                            &self.shortcut_prefix,
+                            None,
+                            false,
+                            input_method,
+                        ) {
+                            // Found a match! Send the replacement with key_consumed flag
+                            // Note: backspace_count - 1 because current key hasn't been typed yet
+                            // Example: "->" trigger has backspace_count=2, but only '-' is on screen
+                            let output: Vec<char> = m.output.chars().collect();
+                            let backspace_count = (m.backspace_count as u8).saturating_sub(1);
+                            self.shortcut_prefix.clear();
+                            return Result::send_consumed(backspace_count, &output);
+                        }
                     }
 
                     // Issue #185: Only set saw_sentence_ending for punctuation (not Enter)
@@ -1089,6 +1107,11 @@ impl Engine {
     /// Try word boundary shortcuts (triggered by space, punctuation, etc.)
     /// The `trigger_char` is appended to the output (space for space, punctuation for punctuation)
     fn try_word_boundary_shortcut_with_char(&mut self, _trigger_char: char) -> Result {
+        // Skip if shortcuts are disabled
+        if !self.shortcuts_enabled {
+            return Result::none();
+        }
+
         // Issue #107: Allow shortcuts with special char prefix (like "#fne")
         // If shortcut_prefix is set, we still try to match even with empty buffer
         if self.buf.is_empty() && self.shortcut_prefix.is_empty() {

@@ -142,6 +142,10 @@ class RustBridge {
         ime_allow_foreign_consonants(enabled)
     }
 
+    func setShortcutsEnabled(_ enabled: Bool) {
+        ime_shortcuts_enabled(enabled)
+    }
+
     // MARK: - Shortcuts
 
     func addShortcut(trigger: String, replacement: String) {
