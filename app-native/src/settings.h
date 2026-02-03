@@ -54,7 +54,7 @@ public:
     bool clipboardMode;  // Use clipboard for text injection (for stubborn apps)
     bool smartSwitch;    // Remember IME state per app (Feature 2)
     bool autoStart;
-    bool silentStartup;  // Start minimized to tray without notification
+    bool silentStartup;  // Hide Settings on startup, show Toast notification instead
     bool shortcutsEnabled;  // Enable/disable text shortcuts
     bool checkForUpdates;   // Check for updates on startup
     std::vector<TextShortcut> shortcuts;

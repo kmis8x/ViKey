@@ -13,8 +13,8 @@ IDI_ICON_EN ICON "E.ico"
 
 // Version Info
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,3,3,0
-PRODUCTVERSION 1,3,3,0
+FILEVERSION 1,3,4,0
+PRODUCTVERSION 1,3,4,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -27,12 +27,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ViKey"
             VALUE "FileDescription", "ViKey - Nhẹ, nhanh, chuẩn Việt"
-            VALUE "FileVersion", "1.3.3"
+            VALUE "FileVersion", "1.3.4"
             VALUE "InternalName", "ViKey"
             VALUE "LegalCopyright", "Copyright (C) 2026"
             VALUE "OriginalFilename", "ViKey.exe"
             VALUE "ProductName", "ViKey"
-            VALUE "ProductVersion", "1.3.3"
+            VALUE "ProductVersion", "1.3.4"
         END
     END
     BLOCK "VarFileInfo"
@@ -78,7 +78,7 @@ END
 IDD_SETTINGS DIALOGEX 0, 0, 300, 175
 EXSTYLE WS_EX_APPWINDOW
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "ViKey x64 - 1.3.3 - Nhẹ, nhanh, chuẩn Việt"
+CAPTION "ViKey x64 - 1.3.4 - Nhẹ, nhanh, chuẩn Việt"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     // Top section - Điều khiển
@@ -89,30 +89,33 @@ BEGIN
     AUTOCHECKBOX "Ctrl", IDC_CHECK_HOTKEY_CTRL, 55, 30, 26, 10
     AUTOCHECKBOX "Shift", IDC_CHECK_HOTKEY_SHIFT, 82, 30, 32, 10
     AUTOCHECKBOX "Alt", IDC_CHECK_HOTKEY_ALT, 115, 30, 22, 10
-    EDITTEXT IDC_EDIT_HOTKEY, 140, 28, 35, 12, ES_AUTOHSCROLL | ES_UPPERCASE
-    AUTOCHECKBOX "Win", IDC_CHECK_HOTKEY_WIN, 178, 30, 28, 10
+    AUTOCHECKBOX "Win", IDC_CHECK_HOTKEY_WIN, 138, 30, 28, 10
+    EDITTEXT IDC_EDIT_HOTKEY, 168, 28, 35, 12, ES_AUTOHSCROLL | ES_UPPERCASE
 
     // Right buttons
     DEFPUSHBUTTON "Lưu", IDC_BTN_OK, 245, 10, 50, 16
     PUSHBUTTON "Huỷ", IDC_BTN_CANCEL, 245, 30, 50, 16
 
-    // Options - 2 columns only
-    AUTOCHECKBOX "Bỏ dấu kiểu mới", IDC_CHECK_MODERN, 10, 55, 70, 10
-    AUTOCHECKBOX "Bỏ dấu tự do", IDC_CHECK_FREETONE, 10, 68, 60, 10
-    AUTOCHECKBOX "f,j,w,z phụ âm", IDC_CHECK_FOREIGN, 10, 81, 65, 10
-    AUTOCHECKBOX "Tự động viết hoa", IDC_CHECK_AUTOCAP, 10, 94, 70, 10
-    AUTOCHECKBOX "Chế độ clipboard", IDC_CHECK_CLIPBOARD, 10, 107, 70, 10
-    AUTOCHECKBOX "Cho phép gõ tắt", IDC_CHECK_SHORTCUT_ENABLED, 10, 120, 68, 10
-    AUTOCHECKBOX "Khởi động cùng Windows", IDC_CHECK_AUTOSTART, 10, 133, 95, 10
+    // Options section - Tuỳ chọn (starts at y=50, right after Điều khiển)
+    GROUPBOX "Tuỳ chọn", -1, 4, 50, 291, 100
 
-    AUTOCHECKBOX "Tự động khôi phục tiếng Anh", IDC_CHECK_AUTORESTORE, 155, 55, 110, 10
-    AUTOCHECKBOX "ESC khôi phục ASCII", IDC_CHECK_ESCRESTORE, 155, 68, 85, 10
-    AUTOCHECKBOX "Dấu ngoặc làm phím tắt", IDC_CHECK_BRACKET, 155, 81, 95, 10
-    AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 155, 94, 80, 10
-    AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 155, 107, 80, 10
-    AUTOCHECKBOX "Chế độ chậm (terminal)", IDC_CHECK_SLOWMODE, 155, 120, 95, 10
-    AUTOCHECKBOX "Ẩn khi khởi động", IDC_CHECK_SILENT, 108, 133, 70, 10
-    AUTOCHECKBOX "Kiểm tra cập nhật", IDC_CHECK_AUTO_UPDATE, 185, 133, 75, 10
+    AUTOCHECKBOX "Bỏ dấu kiểu mới", IDC_CHECK_MODERN, 10, 60, 70, 10
+    AUTOCHECKBOX "Bỏ dấu tự do", IDC_CHECK_FREETONE, 10, 73, 60, 10
+    AUTOCHECKBOX "f,j,w,z phụ âm", IDC_CHECK_FOREIGN, 10, 86, 65, 10
+    AUTOCHECKBOX "Tự động viết hoa", IDC_CHECK_AUTOCAP, 10, 99, 70, 10
+    AUTOCHECKBOX "Chế độ clipboard", IDC_CHECK_CLIPBOARD, 10, 112, 70, 10
+    AUTOCHECKBOX "Cho phép gõ tắt", IDC_CHECK_SHORTCUT_ENABLED, 10, 125, 68, 10
+
+    AUTOCHECKBOX "Tự động khôi phục tiếng Anh", IDC_CHECK_AUTORESTORE, 155, 60, 110, 10
+    AUTOCHECKBOX "ESC khôi phục ASCII", IDC_CHECK_ESCRESTORE, 155, 73, 85, 10
+    AUTOCHECKBOX "Dấu ngoặc làm phím tắt", IDC_CHECK_BRACKET, 155, 86, 95, 10
+    AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 155, 99, 80, 10
+    AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 155, 112, 80, 10
+    AUTOCHECKBOX "Chế độ chậm (terminal)", IDC_CHECK_SLOWMODE, 155, 125, 95, 10
+
+    AUTOCHECKBOX "Khởi động cùng Windows", IDC_CHECK_AUTOSTART, 10, 138, 95, 10
+    AUTOCHECKBOX "Ẩn khi khởi động", IDC_CHECK_SILENT, 108, 138, 70, 10
+    AUTOCHECKBOX "Kiểm tra cập nhật", IDC_CHECK_AUTO_UPDATE, 185, 138, 75, 10
 
     // Bottom buttons row
     PUSHBUTTON "Bảng gõ tắt...", IDC_BTN_SHORTCUTS, 10, 155, 55, 15
@@ -200,7 +203,7 @@ CAPTION "Giới thiệu"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     ICON IDI_LOGO, IDC_STATIC_LOGO, 60, 6, 21, 20
-    CTEXT "ViKey 1.3.3", -1, 0, 32, 145, 10
+    CTEXT "ViKey 1.3.4", -1, 0, 32, 145, 10
     CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 44, 145, 8
     CTEXT "~400KB • <1ms • <5MB RAM", -1, 0, 56, 145, 8
     CTEXT "Ctrl+Space chuyển ngôn ngữ", -1, 0, 66, 145, 8
@@ -223,7 +226,7 @@ BEGIN
 
     AUTOCHECKBOX "Không kiểm tra tự động", IDC_CHECK_DISABLE_UPDATE, 10, 78, 100, 10
 
-    DEFPUSHBUTTON "Tải về ngay", IDC_BTN_DOWNLOAD, 100, 88, 45, 14
+    DEFPUSHBUTTON "Cập nhật ngay", IDC_BTN_DOWNLOAD, 95, 88, 50, 14
     PUSHBUTTON "Để sau", IDC_BTN_SKIP, 150, 88, 40, 14
 END
 

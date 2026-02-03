@@ -2,6 +2,19 @@
 
 Các thay đổi đáng chú ý của dự án.
 
+## [1.3.4] - 2026-02-03
+
+### Thêm mới
+- **Tự động cập nhật**: Nút "Cập nhật ngay" tải và cài đặt bản mới tự động
+- **Giao diện cải tiến**: Thêm khung "Tuỳ chọn" gom nhóm các checkbox
+- **Sắp xếp phím chuyển**: Thứ tự mới Ctrl → Shift → Alt → Win → [Key]
+
+### Sửa lỗi
+- **Tray icon**: Sửa lỗi không hiển thị icon, load từ embedded resources
+- **Ẩn khi khởi động**: Làm rõ hành vi - bỏ tick = hiện Settings, tick = hiện Toast
+- **Nút Lấy app**: Sửa text bị cắt trong dialog Loại trừ ứng dụng
+- **Cột ListView**: Sửa cột thứ 3 trống trong dialog Gõ tắt
+
 ## [1.3.3] - 2026-02-03
 
 ### Sửa lỗi

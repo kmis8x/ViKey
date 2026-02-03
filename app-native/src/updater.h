@@ -9,8 +9,8 @@
 #include <functional>
 
 // Current version - update this when releasing new versions
-constexpr const wchar_t* VIKEY_VERSION = L"1.3.3";
-constexpr const char* VIKEY_VERSION_A = "1.3.3";
+constexpr const wchar_t* VIKEY_VERSION = L"1.3.4";
+constexpr const char* VIKEY_VERSION_A = "1.3.4";
 
 // GitHub API endpoint for releases
 constexpr const wchar_t* GITHUB_API_HOST = L"api.github.com";
@@ -40,6 +40,10 @@ public:
 
     // Open download page in browser
     static void OpenDownloadPage();
+
+    // Download and install update automatically
+    // Returns true if download started successfully
+    bool DownloadAndInstall(const std::wstring& version, HWND hWnd);
 
     // Get current version
     static const wchar_t* GetCurrentVersion() { return VIKEY_VERSION; }

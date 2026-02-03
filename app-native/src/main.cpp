@@ -318,12 +318,16 @@ bool InitInstance(HINSTANCE hInstance) {
     // Update UI state
     UpdateUI();
 
-    // Show startup notification if not silent
-    if (!Settings::Instance().silentStartup) {
+    // Show Settings dialog or Toast on startup based on silentStartup setting
+    if (Settings::Instance().silentStartup) {
+        // Silent mode: show Toast notification only
         const wchar_t* lang = Settings::Instance().enabled ? L"Ti\u1EBFng Vi\u1EC7t" : L"Ti\u1EBFng Anh";
         wchar_t msg[128];
         swprintf_s(msg, L"\u0110ang ch\u1EA1y \u1EDF ch\u1EBF \u0111\u1ED9 %s\nCtrl+Space \u0111\u1EC3 chuy\u1EC3n", lang);
         tray.ShowBalloon(L"B\u1ED9 g\u00F5 ti\u1EBFng Vi\u1EC7t", msg);
+    } else {
+        // Normal mode: show Settings dialog
+        PostMessage(g_hWnd, WM_COMMAND, IDM_SETTINGS, 0);
     }
 
     // Check for updates on startup (async)
@@ -867,7 +871,7 @@ INT_PTR CALLBACK ExcludeAppsDialogProc(HWND hDlg, UINT message, WPARAM wParam, L
         ScaleDialogForDpi(hDlg);
         // Set Vietnamese text
         SetWindowTextW(hDlg, L"Lo\u1EA1i tr\u1EEB \u1EE9ng d\u1EE5ng");
-        SetDlgItemTextW(hDlg, IDC_BTN_GET_CURRENT, L"L\u1EA5y app\nhi\u1EC7n t\u1EA1i");
+        SetDlgItemTextW(hDlg, IDC_BTN_GET_CURRENT, L"L\u1EA5y app");
         SetDlgItemTextW(hDlg, IDOK, L"L\u01B0u");
         SetDlgItemTextW(hDlg, IDCANCEL, L"Hu\u1EF7");
 
@@ -1065,15 +1069,20 @@ void InitShortcutsListView(HWND hList) {
         ListView_SetTextColor(hList, RGB(255, 255, 255));
     }
 
+    // Get ListView width to calculate column sizes
+    RECT rcList;
+    GetClientRect(hList, &rcList);
+    int listWidth = rcList.right - rcList.left - GetSystemMetrics(SM_CXVSCROLL) - 4;
+
     LVCOLUMNW col = {};
     col.mask = LVCF_TEXT | LVCF_WIDTH;
 
     col.pszText = (LPWSTR)L"T\u1EAFt";
-    col.cx = 55;
+    col.cx = 60;
     ListView_InsertColumn(hList, 0, &col);
 
     col.pszText = (LPWSTR)L"Thay th\u1EBF";
-    col.cx = 155;
+    col.cx = listWidth - 60;  // Fill remaining space
     ListView_InsertColumn(hList, 1, &col);
 
     // Load shortcuts from settings
@@ -1352,7 +1361,7 @@ INT_PTR CALLBACK UpdateDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
         }
 
         // Set button text
-        SetDlgItemTextW(hDlg, IDC_BTN_DOWNLOAD, L"T\u1EA3i v\u1EC1 ngay");
+        SetDlgItemTextW(hDlg, IDC_BTN_DOWNLOAD, L"C\u1EADp nh\u1EADt ngay");
         SetDlgItemTextW(hDlg, IDC_BTN_SKIP, L"\u0110\u1EC3 sau");
         SetDlgItemTextW(hDlg, IDC_CHECK_DISABLE_UPDATE, L"Kh\u00F4ng ki\u1EC3m tra t\u1EF1 \u0111\u1ED9ng");
 
@@ -1361,18 +1370,23 @@ INT_PTR CALLBACK UpdateDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
-        case IDC_BTN_DOWNLOAD:
-            // Open download page
-            Updater::OpenDownloadPage();
-
+        case IDC_BTN_DOWNLOAD: {
             // Check if user wants to disable auto-check
             if (IsDlgButtonChecked(hDlg, IDC_CHECK_DISABLE_UPDATE) == BST_CHECKED) {
                 Settings::Instance().checkForUpdates = false;
                 Settings::Instance().Save();
             }
 
+            // Auto download and install update
             EndDialog(hDlg, IDOK);
+            if (!Updater::Instance().DownloadAndInstall(g_updateInfo.latestVersion, g_hWnd)) {
+                // Fallback to opening download page if auto-update fails
+                MessageBoxW(g_hWnd, L"Kh\u00F4ng th\u1EC3 t\u1EF1 \u0111\u1ED9ng c\u1EADp nh\u1EADt.\nM\u1EDF trang t\u1EA3i v\u1EC1...",
+                    L"L\u1ED7i c\u1EADp nh\u1EADt", MB_ICONWARNING);
+                Updater::OpenDownloadPage();
+            }
             return TRUE;
+        }
 
         case IDC_BTN_SKIP:
         case IDCANCEL:

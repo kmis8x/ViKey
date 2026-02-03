@@ -10,9 +10,9 @@ Bộ gõ tiếng Việt nhẹ, nhanh, chuẩn cho **Windows**, **macOS** và **L
 
 | Nền tảng | Phiên bản | Tải |
 |----------|-----------|-----|
-| Windows 10/11 (64-bit) | v1.3.3 | [ViKey-v1.3.3-win64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
-| macOS (Apple Silicon) | v1.3.3 | [ViKey-macOS-arm64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
-| Linux x86_64 (IBus) | v1.3.3 | [ViKey-Linux-x86_64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
+| Windows 10/11 (64-bit) | v1.3.4 | [ViKey-v1.3.4-win64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
+| macOS (Apple Silicon) | v1.3.4 | [ViKey-macOS-arm64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
+| Linux x86_64 (IBus) | v1.3.4 | [ViKey-Linux-x86_64.zip](https://github.com/kmis8x/ViKey/releases/latest) |
 
 **Không cần cài đặt!** Giải nén và chạy.
 
@@ -30,7 +30,7 @@ Bộ gõ tiếng Việt nhẹ, nhanh, chuẩn cho **Windows**, **macOS** và **L
 
 ### Windows
 
-1. Tải `ViKey-v1.3.3-win64.zip`
+1. Tải `ViKey-v1.3.4-win64.zip`
 2. Giải nén vào thư mục bất kỳ
 3. Chạy `ViKey.exe`
 

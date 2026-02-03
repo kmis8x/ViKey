@@ -37,23 +37,11 @@ bool TrayIcon::Initialize(HWND hWnd, HINSTANCE hInstance) {
     ULONG_PTR gdiplusToken;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
-    // Get exe directory for icon paths
-    wchar_t exePath[MAX_PATH];
-    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-    std::wstring exeDir(exePath);
-    size_t lastSlash = exeDir.find_last_of(L"\\/");
-    if (lastSlash != std::wstring::npos) {
-        exeDir = exeDir.substr(0, lastSlash);
-    }
+    // Load icons from embedded resources
+    m_iconVN = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(IDI_ICON_VN), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+    m_iconEN = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(IDI_ICON_EN), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
 
-    // Load icons from .ico files (already have white border)
-    std::wstring vnIconPath = exeDir + L"\\assets\\V.ico";
-    std::wstring enIconPath = exeDir + L"\\assets\\E.ico";
-
-    m_iconVN = (HICON)LoadImageW(nullptr, vnIconPath.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-    m_iconEN = (HICON)LoadImageW(nullptr, enIconPath.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-
-    // Fallback to generated icons if files not found
+    // Fallback to generated icons if resources not found
     if (!m_iconVN) m_iconVN = CreateLetterIcon(true);
     if (!m_iconEN) m_iconEN = CreateLetterIcon(false);
 
