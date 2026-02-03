@@ -56,6 +56,7 @@ public:
     bool autoStart;
     bool silentStartup;  // Start minimized to tray without notification
     bool shortcutsEnabled;  // Enable/disable text shortcuts
+    bool checkForUpdates;   // Check for updates on startup
     std::vector<TextShortcut> shortcuts;
     std::vector<std::wstring> excludedApps;  // Apps to auto-disable (Feature 3)
     HotkeyConfig toggleHotkey;  // Configurable toggle hotkey

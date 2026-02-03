@@ -28,6 +28,7 @@
 #include "keyboard_hook.h"
 #include "app_detector.h"
 #include "encoding_converter.h"
+#include "updater.h"
 #include <cstdio>
 #include <ctime>
 
@@ -105,6 +106,10 @@ void ShowConverterDialog();
 INT_PTR CALLBACK ConverterDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void ShowShortcutsDialog();
 INT_PTR CALLBACK ShortcutsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+void CheckForUpdatesOnStartup();
+void ShowUpdateDialog(const UpdateInfo& info);
+INT_PTR CALLBACK UpdateDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+void CheckForUpdatesManual();
 
 // DPI helper - get scaling factor for current monitor
 float GetDpiScale(HWND hWnd) {
@@ -321,6 +326,11 @@ bool InitInstance(HINSTANCE hInstance) {
         tray.ShowBalloon(L"B\u1ED9 g\u00F5 ti\u1EBFng Vi\u1EC7t", msg);
     }
 
+    // Check for updates on startup (async)
+    if (Settings::Instance().checkForUpdates) {
+        CheckForUpdatesOnStartup();
+    }
+
     return true;
 }
 
@@ -425,12 +435,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             ShowConverterDialog();
             break;
 
+        case IDM_CHECK_UPDATE:
+            CheckForUpdatesManual();
+            break;
+
         case IDM_EXIT:
             if (TrayIcon::Instance().onExit)
                 TrayIcon::Instance().onExit();
             break;
         }
         return 0;
+
+    case WM_UPDATE_CHECK_COMPLETE: {
+        UpdateInfo* pInfo = reinterpret_cast<UpdateInfo*>(lParam);
+        if (pInfo) {
+            if (pInfo->available) {
+                ShowUpdateDialog(*pInfo);
+            }
+            delete pInfo;
+        }
+        return 0;
+    }
 
     case WM_HOTKEY:
         HotkeyManager::Instance().ProcessHotkey(wParam);
@@ -583,7 +608,7 @@ void InitSettingsDialog(HWND hDlg) {
     Settings& settings = Settings::Instance();
 
     // Set title like EVKey style with icon
-    SetWindowTextW(hDlg, L"ViKey x64 - 1.3.2 - Nh\u1EB9, nhanh, chu\u1EA9n Vi\u1EC7t");
+    SetWindowTextW(hDlg, L"ViKey x64 - 1.3.3 - Nh\u1EB9, nhanh, chu\u1EA9n Vi\u1EC7t");
     // Set dialog icon (shows in title bar)
     HICON hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(IDI_LOGO));
     SendMessageW(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
@@ -604,6 +629,7 @@ void InitSettingsDialog(HWND hDlg) {
     SetDlgItemTextW(hDlg, IDC_CHECK_AUTOSTART, L"Kh\u1EDFi \u0111\u1ED9ng c\u00F9ng Windows");
     SetDlgItemTextW(hDlg, IDC_CHECK_SILENT, L"\u1EA8n khi kh\u1EDFi \u0111\u1ED9ng");
     SetDlgItemTextW(hDlg, IDC_CHECK_SHORTCUT_ENABLED, L"Cho ph\u00E9p g\u00F5 t\u1EAFt");
+    SetDlgItemTextW(hDlg, IDC_CHECK_AUTO_UPDATE, L"Ki\u1EC3m tra c\u1EADp nh\u1EADt");
     SetDlgItemTextW(hDlg, IDC_BTN_OK, L"L\u01B0u");
     SetDlgItemTextW(hDlg, IDC_BTN_CANCEL, L"Hu\u1EF7");
 
@@ -630,6 +656,7 @@ void InitSettingsDialog(HWND hDlg) {
     CheckDlgButton(hDlg, IDC_CHECK_SMARTSWITCH, settings.smartSwitch ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_AUTOSTART, settings.autoStart ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_CHECK_SILENT, settings.silentStartup ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hDlg, IDC_CHECK_AUTO_UPDATE, settings.checkForUpdates ? BST_CHECKED : BST_UNCHECKED);
 
     // Hotkey configuration
     CheckDlgButton(hDlg, IDC_CHECK_HOTKEY_CTRL, settings.toggleHotkey.ctrl ? BST_CHECKED : BST_UNCHECKED);
@@ -674,6 +701,7 @@ void SaveSettingsFromDialog(HWND hDlg) {
     settings.smartSwitch = IsDlgButtonChecked(hDlg, IDC_CHECK_SMARTSWITCH) == BST_CHECKED;
     settings.autoStart = IsDlgButtonChecked(hDlg, IDC_CHECK_AUTOSTART) == BST_CHECKED;
     settings.silentStartup = IsDlgButtonChecked(hDlg, IDC_CHECK_SILENT) == BST_CHECKED;
+    settings.checkForUpdates = IsDlgButtonChecked(hDlg, IDC_CHECK_AUTO_UPDATE) == BST_CHECKED;
 
     // Hotkey configuration
     settings.toggleHotkey.ctrl = IsDlgButtonChecked(hDlg, IDC_CHECK_HOTKEY_CTRL) == BST_CHECKED;
@@ -1253,6 +1281,111 @@ INT_PTR CALLBACK ShortcutsDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPA
         }
         break;
     }
+    }
+    return FALSE;
+}
+
+// ============================================================
+// Update Check Functions
+// ============================================================
+
+// Global to store update info for dialog
+static UpdateInfo g_updateInfo;
+
+void CheckForUpdatesOnStartup() {
+    // Check async to not block startup
+    Updater::Instance().CheckForUpdatesAsync(g_hWnd, [](const UpdateInfo& info) {
+        // Callback is handled via WM_UPDATE_CHECK_COMPLETE message
+    });
+}
+
+void CheckForUpdatesManual() {
+    // Show checking message
+    TrayIcon::Instance().ShowBalloon(L"Ki\u1EC3m tra c\u1EADp nh\u1EADt",
+        L"\u0110ang ki\u1EC3m tra phi\u00EAn b\u1EA3n m\u1EDBi...");
+
+    // Check sync for manual request
+    UpdateInfo info = Updater::Instance().CheckForUpdates();
+
+    if (!info.error.empty()) {
+        MessageBoxW(g_hWnd, info.error.c_str(), L"L\u1ED7i ki\u1EC3m tra c\u1EADp nh\u1EADt", MB_ICONERROR);
+    } else if (info.available) {
+        ShowUpdateDialog(info);
+    } else {
+        wchar_t msg[256];
+        swprintf_s(msg, L"B\u1EA1n \u0111ang s\u1EED d\u1EE5ng phi\u00EAn b\u1EA3n m\u1EDBi nh\u1EA5t (%s)", Updater::GetCurrentVersion());
+        MessageBoxW(g_hWnd, msg, L"Ki\u1EC3m tra c\u1EADp nh\u1EADt", MB_ICONINFORMATION);
+    }
+}
+
+void ShowUpdateDialog(const UpdateInfo& info) {
+    g_updateInfo = info;
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_UPDATE), g_hWnd, UpdateDialogProc);
+}
+
+INT_PTR CALLBACK UpdateDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    UNREFERENCED_PARAMETER(lParam);
+
+    // Handle dark mode colors
+    INT_PTR darkResult = HandleDarkModeColors(message, wParam);
+    if (darkResult) return darkResult;
+
+    switch (message) {
+    case WM_INITDIALOG: {
+        ScaleDialogForDpi(hDlg);
+
+        // Set dialog title and icon
+        SetWindowTextW(hDlg, L"C\u00F3 phi\u00EAn b\u1EA3n m\u1EDBi!");
+        HICON hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(IDI_LOGO));
+        SendMessageW(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+        SendMessageW(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
+        // Set version info
+        wchar_t versionMsg[256];
+        swprintf_s(versionMsg, L"Phi\u00EAn b\u1EA3n hi\u1EC7n t\u1EA1i: %s\nPhi\u00EAn b\u1EA3n m\u1EDBi: %s",
+            Updater::GetCurrentVersion(), g_updateInfo.latestVersion.c_str());
+        SetDlgItemTextW(hDlg, IDC_STATIC_VERSION, versionMsg);
+
+        // Set release notes if available
+        if (!g_updateInfo.releaseNotes.empty()) {
+            SetDlgItemTextW(hDlg, IDC_STATIC_NOTES, g_updateInfo.releaseNotes.c_str());
+        }
+
+        // Set button text
+        SetDlgItemTextW(hDlg, IDC_BTN_DOWNLOAD, L"T\u1EA3i v\u1EC1 ngay");
+        SetDlgItemTextW(hDlg, IDC_BTN_SKIP, L"\u0110\u1EC3 sau");
+        SetDlgItemTextW(hDlg, IDC_CHECK_DISABLE_UPDATE, L"Kh\u00F4ng ki\u1EC3m tra t\u1EF1 \u0111\u1ED9ng");
+
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDC_BTN_DOWNLOAD:
+            // Open download page
+            Updater::OpenDownloadPage();
+
+            // Check if user wants to disable auto-check
+            if (IsDlgButtonChecked(hDlg, IDC_CHECK_DISABLE_UPDATE) == BST_CHECKED) {
+                Settings::Instance().checkForUpdates = false;
+                Settings::Instance().Save();
+            }
+
+            EndDialog(hDlg, IDOK);
+            return TRUE;
+
+        case IDC_BTN_SKIP:
+        case IDCANCEL:
+            // Check if user wants to disable auto-check
+            if (IsDlgButtonChecked(hDlg, IDC_CHECK_DISABLE_UPDATE) == BST_CHECKED) {
+                Settings::Instance().checkForUpdates = false;
+                Settings::Instance().Save();
+            }
+
+            EndDialog(hDlg, IDCANCEL);
+            return TRUE;
+        }
+        break;
     }
     return FALSE;
 }

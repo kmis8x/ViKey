@@ -29,7 +29,8 @@ Settings::Settings()
     , clipboardMode(false)
     , smartSwitch(false)
     , autoStart(false)
-    , silentStartup(false) {
+    , silentStartup(false)
+    , checkForUpdates(true) {
 }
 
 void Settings::Load() {
@@ -49,6 +50,7 @@ void Settings::Load() {
     autoStart = GetAutoStart();
     silentStartup = GetBool(L"SilentStartup", false);
     shortcutsEnabled = GetBool(L"ShortcutsEnabled", true);  // Default enabled
+    checkForUpdates = GetBool(L"CheckForUpdates", true);   // Default enabled
     LoadShortcuts();
     LoadExcludedApps();
 
@@ -77,6 +79,7 @@ void Settings::Save() {
     SetAutoStart(autoStart);
     SetBool(L"SilentStartup", silentStartup);
     SetBool(L"ShortcutsEnabled", shortcutsEnabled);
+    SetBool(L"CheckForUpdates", checkForUpdates);
     SaveShortcuts();
     SaveExcludedApps();
 

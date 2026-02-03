@@ -105,6 +105,17 @@
 #define WM_TRAYICON           (WM_USER + 1)
 #define WM_TOGGLE_IME         (WM_USER + 2)
 
+// Update Dialog Controls
+#define IDD_UPDATE            305
+#define IDC_STATIC_UPDATE_MSG 460
+#define IDC_STATIC_VERSION    461
+#define IDC_STATIC_NOTES      462
+#define IDC_BTN_DOWNLOAD      463
+#define IDC_BTN_SKIP          464
+#define IDC_CHECK_DISABLE_UPDATE 465
+#define IDC_CHECK_AUTO_UPDATE 466
+#define IDM_CHECK_UPDATE      217
+
 // String IDs
 #define IDS_APP_TITLE         1000
 #define IDS_TOOLTIP_VN        1001

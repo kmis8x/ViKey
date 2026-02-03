@@ -327,6 +327,7 @@ void TrayIcon::InitializeMenu(HINSTANCE hInstance) {
             ModifyMenuW(hPopup, 4, MF_BYPOSITION | MF_POPUP | MF_STRING, (UINT_PTR)hEncMenu, L"M\u00E3 xu\u1EA5t");
         }
         ModifyMenuW(hPopup, IDM_IMPORT_SETTINGS, MF_BYCOMMAND | MF_STRING, IDM_IMPORT_SETTINGS, L"Nh\u1EADp c\u00E0i \u0111\u1EB7t...");
+        ModifyMenuW(hPopup, IDM_CHECK_UPDATE, MF_BYCOMMAND | MF_STRING, IDM_CHECK_UPDATE, L"Ki\u1EC3m tra c\u1EADp nh\u1EADt");
         ModifyMenuW(hPopup, IDM_ABOUT, MF_BYCOMMAND | MF_STRING, IDM_ABOUT, L"Gi\u1EDBi thi\u1EC7u");
         ModifyMenuW(hPopup, IDM_EXIT, MF_BYCOMMAND | MF_STRING, IDM_EXIT, L"Tho\u00E1t");
     }

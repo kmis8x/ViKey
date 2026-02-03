@@ -65,6 +65,7 @@ BEGIN
         MENUITEM "Xuất cài đặt...", IDM_EXPORT_SETTINGS
         MENUITEM "Nhập cài đặt...", IDM_IMPORT_SETTINGS
         MENUITEM SEPARATOR
+        MENUITEM "Kiểm tra cập nhật", IDM_CHECK_UPDATE
         MENUITEM "Giới thiệu", IDM_ABOUT
         MENUITEM SEPARATOR
         MENUITEM "Thoát", IDM_EXIT
@@ -110,7 +111,8 @@ BEGIN
     AUTOCHECKBOX "Bỏ qua phím tắt w", IDC_CHECK_SKIPW, 155, 94, 80, 10
     AUTOCHECKBOX "Nhớ theo ứng dụng", IDC_CHECK_SMARTSWITCH, 155, 107, 80, 10
     AUTOCHECKBOX "Chế độ chậm (terminal)", IDC_CHECK_SLOWMODE, 155, 120, 95, 10
-    AUTOCHECKBOX "Ẩn khi khởi động", IDC_CHECK_SILENT, 155, 133, 70, 10
+    AUTOCHECKBOX "Ẩn khi khởi động", IDC_CHECK_SILENT, 108, 133, 70, 10
+    AUTOCHECKBOX "Kiểm tra cập nhật", IDC_CHECK_AUTO_UPDATE, 185, 133, 75, 10
 
     // Bottom buttons row
     PUSHBUTTON "Bảng gõ tắt...", IDC_BTN_SHORTCUTS, 10, 155, 55, 15
@@ -198,11 +200,31 @@ CAPTION "Giới thiệu"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     ICON IDI_LOGO, IDC_STATIC_LOGO, 60, 6, 21, 20
-    CTEXT "ViKey 1.3.2", -1, 0, 32, 145, 10
+    CTEXT "ViKey 1.3.3", -1, 0, 32, 145, 10
     CTEXT "Nhẹ, nhanh, chuẩn Việt", -1, 0, 44, 145, 8
     CTEXT "~400KB • <1ms • <5MB RAM", -1, 0, 56, 145, 8
     CTEXT "Ctrl+Space chuyển ngôn ngữ", -1, 0, 66, 145, 8
     DEFPUSHBUTTON "Đóng", IDOK, 52, 78, 40, 12
+END
+
+// =============================================================================
+// Update Dialog
+// =============================================================================
+IDD_UPDATE DIALOGEX 0, 0, 200, 105
+EXSTYLE WS_EX_APPWINDOW
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Có phiên bản mới!"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    ICON IDI_LOGO, -1, 10, 10, 21, 20
+    LTEXT "Có phiên bản mới của ViKey!", IDC_STATIC_UPDATE_MSG, 40, 10, 150, 10
+    LTEXT "", IDC_STATIC_VERSION, 40, 24, 150, 20
+    LTEXT "", IDC_STATIC_NOTES, 10, 48, 180, 24
+
+    AUTOCHECKBOX "Không kiểm tra tự động", IDC_CHECK_DISABLE_UPDATE, 10, 78, 100, 10
+
+    DEFPUSHBUTTON "Tải về ngay", IDC_BTN_DOWNLOAD, 100, 88, 45, 14
+    PUSHBUTTON "Để sau", IDC_BTN_SKIP, 150, 88, 40, 14
 END
 
 // String Table
