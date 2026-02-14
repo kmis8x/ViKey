@@ -8,9 +8,6 @@
 #include <shellapi.h>
 #include <thread>
 #include <sstream>
-#include <atomic>
-#include <regex>
-
 #pragma comment(lib, "winhttp.lib")
 
 // Function pointer for version comparison from core.dll
