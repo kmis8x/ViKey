@@ -42,6 +42,9 @@ private:
     TextSender(const TextSender&) = delete;
     TextSender& operator=(const TextSender&) = delete;
 
+    // Unified send with configurable delays
+    void SendTextWithDelay(const std::wstring& text, int backspaces, int bsDelay, int charDelay, int gapDelay);
+
     // Fast mode: batch all events (default)
     void SendTextFast(const std::wstring& text, int backspaces);
 

@@ -8,6 +8,8 @@
 #include <shellapi.h>
 #include <thread>
 #include <sstream>
+#include <atomic>
+#include <regex>
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -65,14 +67,15 @@ void Updater::CheckForUpdatesAsync(HWND hWnd, std::function<void(const UpdateInf
     m_callback = callback;
 
     // Run check in background thread
-    std::thread([this]() {
+    // Capture hWnd by value to avoid accessing member after destruction
+    HWND capturedWnd = hWnd;
+    std::thread([this, capturedWnd]() {
         UpdateInfo info = CheckForUpdates();
 
-        // Post message to main thread
-        if (m_callbackWnd && m_callback) {
-            // Allocate info on heap to pass to main thread
+        // Verify window still exists before posting message
+        if (capturedWnd && IsWindow(capturedWnd)) {
             UpdateInfo* pInfo = new UpdateInfo(info);
-            PostMessage(m_callbackWnd, WM_UPDATE_CHECK_COMPLETE, 0, (LPARAM)pInfo);
+            PostMessage(capturedWnd, WM_UPDATE_CHECK_COMPLETE, 0, (LPARAM)pInfo);
         }
     }).detach();
 }
@@ -133,6 +136,20 @@ std::string Updater::HttpGet(const wchar_t* host, const wchar_t* path) {
 
     if (bResult) {
         bResult = WinHttpReceiveResponse(hRequest, nullptr);
+    }
+
+    // Validate HTTP status code
+    if (bResult) {
+        DWORD statusCode = 0;
+        DWORD statusSize = sizeof(statusCode);
+        WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                            WINHTTP_HEADER_NAME_BY_INDEX, &statusCode, &statusSize, WINHTTP_NO_HEADER_INDEX);
+        if (statusCode != 200) {
+            WinHttpCloseHandle(hRequest);
+            WinHttpCloseHandle(hConnect);
+            WinHttpCloseHandle(hSession);
+            return result;
+        }
     }
 
     // Read response
@@ -256,8 +273,23 @@ bool Updater::IsNewerVersion(const char* current, const char* latest) {
     return std::string(latest) > std::string(current);
 }
 
+// Validate version string format (only digits and dots, e.g. "1.3.4")
+static bool IsValidVersionString(const std::wstring& v) {
+    if (v.empty() || v.length() > 20) return false;
+    for (wchar_t c : v) {
+        if (c != L'.' && (c < L'0' || c > L'9')) return false;
+    }
+    return true;
+}
+
 bool Updater::DownloadAndInstall(const std::wstring& version, HWND hWnd) {
-    // Build download URL: https://github.com/kmis8x/ViKey/releases/download/v{version}/ViKey-v{version}-win64.zip
+    // Validate version to prevent script injection
+    if (!IsValidVersionString(version)) {
+        MessageBoxW(hWnd, L"Phi\u00EAn b\u1EA3n kh\u00F4ng h\u1EE3p l\u1EC7", L"L\u1ED7i", MB_ICONERROR);
+        return false;
+    }
+
+    // Build download URL
     std::wstring downloadUrl = L"https://github.com/kmis8x/ViKey/releases/download/v" + version +
                                L"/ViKey-v" + version + L"-win64.zip";
 

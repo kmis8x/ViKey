@@ -33,62 +33,93 @@ Settings::Settings()
     , checkForUpdates(true) {
 }
 
+// Batch registry helpers (single key open for all reads/writes)
+static bool ReadBool(HKEY hKey, const wchar_t* name, bool defaultValue) {
+    DWORD value = 0, size = sizeof(value), type = REG_DWORD;
+    if (RegQueryValueExW(hKey, name, nullptr, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS)
+        return value != 0;
+    return defaultValue;
+}
+
+static int ReadInt(HKEY hKey, const wchar_t* name, int defaultValue) {
+    DWORD value = 0, size = sizeof(value), type = REG_DWORD;
+    if (RegQueryValueExW(hKey, name, nullptr, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS)
+        return static_cast<int>(value);
+    return defaultValue;
+}
+
+static void WriteBool(HKEY hKey, const wchar_t* name, bool value) {
+    DWORD dw = value ? 1 : 0;
+    RegSetValueExW(hKey, name, 0, REG_DWORD, (LPBYTE)&dw, sizeof(dw));
+}
+
+static void WriteInt(HKEY hKey, const wchar_t* name, int value) {
+    DWORD dw = static_cast<DWORD>(value);
+    RegSetValueExW(hKey, name, 0, REG_DWORD, (LPBYTE)&dw, sizeof(dw));
+}
+
 void Settings::Load() {
-    enabled = GetBool(L"Enabled", true);
-    method = static_cast<InputMethod>(GetInt(L"Method", 0));
-    modernTone = GetBool(L"ModernTone", true);
-    englishAutoRestore = GetBool(L"EnglishAutoRestore", true);
-    autoCapitalize = GetBool(L"AutoCapitalize", false);
-    escRestore = GetBool(L"EscRestore", true);
-    freeTone = GetBool(L"FreeTone", false);
-    allowForeignConsonants = GetBool(L"AllowForeignConsonants", false);
-    skipWShortcut = GetBool(L"SkipWTextShortcut", false);
-    bracketShortcut = GetBool(L"BracketTextShortcut", false);
-    slowMode = GetBool(L"SlowMode", false);
-    clipboardMode = GetBool(L"ClipboardMode", false);
-    smartSwitch = GetBool(L"SmartSwitch", false);
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        enabled = ReadBool(hKey, L"Enabled", true);
+        int methodInt = ReadInt(hKey, L"Method", 0);
+        method = (methodInt >= 0 && methodInt <= 1) ? static_cast<InputMethod>(methodInt) : InputMethod::Telex;
+        modernTone = ReadBool(hKey, L"ModernTone", true);
+        englishAutoRestore = ReadBool(hKey, L"EnglishAutoRestore", true);
+        autoCapitalize = ReadBool(hKey, L"AutoCapitalize", false);
+        escRestore = ReadBool(hKey, L"EscRestore", true);
+        freeTone = ReadBool(hKey, L"FreeTone", false);
+        allowForeignConsonants = ReadBool(hKey, L"AllowForeignConsonants", false);
+        skipWShortcut = ReadBool(hKey, L"SkipWTextShortcut", false);
+        bracketShortcut = ReadBool(hKey, L"BracketTextShortcut", false);
+        slowMode = ReadBool(hKey, L"SlowMode", false);
+        clipboardMode = ReadBool(hKey, L"ClipboardMode", false);
+        smartSwitch = ReadBool(hKey, L"SmartSwitch", false);
+        silentStartup = ReadBool(hKey, L"SilentStartup", false);
+        shortcutsEnabled = ReadBool(hKey, L"ShortcutsEnabled", true);
+        checkForUpdates = ReadBool(hKey, L"CheckForUpdates", true);
+        toggleHotkey.ctrl = ReadBool(hKey, L"HotkeyCtrl", true);
+        toggleHotkey.shift = ReadBool(hKey, L"HotkeyShift", false);
+        toggleHotkey.alt = ReadBool(hKey, L"HotkeyAlt", false);
+        toggleHotkey.win = ReadBool(hKey, L"HotkeyWin", false);
+        toggleHotkey.vkCode = static_cast<UINT>(ReadInt(hKey, L"HotkeyKey", VK_SPACE));
+        RegCloseKey(hKey);
+    }
     autoStart = GetAutoStart();
-    silentStartup = GetBool(L"SilentStartup", false);
-    shortcutsEnabled = GetBool(L"ShortcutsEnabled", true);  // Default enabled
-    checkForUpdates = GetBool(L"CheckForUpdates", true);   // Default enabled
     LoadShortcuts();
     LoadExcludedApps();
-
-    // Load toggle hotkey config
-    toggleHotkey.ctrl = GetBool(L"HotkeyCtrl", true);
-    toggleHotkey.shift = GetBool(L"HotkeyShift", false);
-    toggleHotkey.alt = GetBool(L"HotkeyAlt", false);
-    toggleHotkey.win = GetBool(L"HotkeyWin", false);
-    toggleHotkey.vkCode = static_cast<UINT>(GetInt(L"HotkeyKey", VK_SPACE));
 }
 
 void Settings::Save() {
-    SetBool(L"Enabled", enabled);
-    SetInt(L"Method", static_cast<int>(method));
-    SetBool(L"ModernTone", modernTone);
-    SetBool(L"EnglishAutoRestore", englishAutoRestore);
-    SetBool(L"AutoCapitalize", autoCapitalize);
-    SetBool(L"EscRestore", escRestore);
-    SetBool(L"FreeTone", freeTone);
-    SetBool(L"AllowForeignConsonants", allowForeignConsonants);
-    SetBool(L"SkipWTextShortcut", skipWShortcut);
-    SetBool(L"BracketTextShortcut", bracketShortcut);
-    SetBool(L"SlowMode", slowMode);
-    SetBool(L"ClipboardMode", clipboardMode);
-    SetBool(L"SmartSwitch", smartSwitch);
+    HKEY hKey;
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, nullptr,
+                        REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS) {
+        WriteBool(hKey, L"Enabled", enabled);
+        WriteInt(hKey, L"Method", static_cast<int>(method));
+        WriteBool(hKey, L"ModernTone", modernTone);
+        WriteBool(hKey, L"EnglishAutoRestore", englishAutoRestore);
+        WriteBool(hKey, L"AutoCapitalize", autoCapitalize);
+        WriteBool(hKey, L"EscRestore", escRestore);
+        WriteBool(hKey, L"FreeTone", freeTone);
+        WriteBool(hKey, L"AllowForeignConsonants", allowForeignConsonants);
+        WriteBool(hKey, L"SkipWTextShortcut", skipWShortcut);
+        WriteBool(hKey, L"BracketTextShortcut", bracketShortcut);
+        WriteBool(hKey, L"SlowMode", slowMode);
+        WriteBool(hKey, L"ClipboardMode", clipboardMode);
+        WriteBool(hKey, L"SmartSwitch", smartSwitch);
+        WriteBool(hKey, L"SilentStartup", silentStartup);
+        WriteBool(hKey, L"ShortcutsEnabled", shortcutsEnabled);
+        WriteBool(hKey, L"CheckForUpdates", checkForUpdates);
+        WriteBool(hKey, L"HotkeyCtrl", toggleHotkey.ctrl);
+        WriteBool(hKey, L"HotkeyShift", toggleHotkey.shift);
+        WriteBool(hKey, L"HotkeyAlt", toggleHotkey.alt);
+        WriteBool(hKey, L"HotkeyWin", toggleHotkey.win);
+        WriteInt(hKey, L"HotkeyKey", static_cast<int>(toggleHotkey.vkCode));
+        RegCloseKey(hKey);
+    }
     SetAutoStart(autoStart);
-    SetBool(L"SilentStartup", silentStartup);
-    SetBool(L"ShortcutsEnabled", shortcutsEnabled);
-    SetBool(L"CheckForUpdates", checkForUpdates);
     SaveShortcuts();
     SaveExcludedApps();
-
-    // Save toggle hotkey config
-    SetBool(L"HotkeyCtrl", toggleHotkey.ctrl);
-    SetBool(L"HotkeyShift", toggleHotkey.shift);
-    SetBool(L"HotkeyAlt", toggleHotkey.alt);
-    SetBool(L"HotkeyWin", toggleHotkey.win);
-    SetInt(L"HotkeyKey", static_cast<int>(toggleHotkey.vkCode));
 }
 
 std::vector<TextShortcut> Settings::DefaultShortcuts() {
@@ -114,68 +145,6 @@ std::vector<TextShortcut> Settings::DefaultShortcuts() {
         {L"nt", L"nh\u1EAFn tin"},
         {L"ctv", L"c\u1ED9ng t\u00E1c vi\u00EAn"},
     };
-}
-
-bool Settings::GetBool(const wchar_t* name, bool defaultValue) {
-    HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, KEY_READ, &hKey) != ERROR_SUCCESS) {
-        return defaultValue;
-    }
-
-    DWORD value = 0;
-    DWORD size = sizeof(value);
-    DWORD type = REG_DWORD;
-    bool result = defaultValue;
-
-    if (RegQueryValueExW(hKey, name, nullptr, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS) {
-        result = value != 0;
-    }
-
-    RegCloseKey(hKey);
-    return result;
-}
-
-void Settings::SetBool(const wchar_t* name, bool value) {
-    HKEY hKey;
-    if (RegCreateKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, nullptr,
-                        REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &hKey, nullptr) != ERROR_SUCCESS) {
-        return;
-    }
-
-    DWORD dwordValue = value ? 1 : 0;
-    RegSetValueExW(hKey, name, 0, REG_DWORD, (LPBYTE)&dwordValue, sizeof(dwordValue));
-    RegCloseKey(hKey);
-}
-
-int Settings::GetInt(const wchar_t* name, int defaultValue) {
-    HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, KEY_READ, &hKey) != ERROR_SUCCESS) {
-        return defaultValue;
-    }
-
-    DWORD value = 0;
-    DWORD size = sizeof(value);
-    DWORD type = REG_DWORD;
-    int result = defaultValue;
-
-    if (RegQueryValueExW(hKey, name, nullptr, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS) {
-        result = static_cast<int>(value);
-    }
-
-    RegCloseKey(hKey);
-    return result;
-}
-
-void Settings::SetInt(const wchar_t* name, int value) {
-    HKEY hKey;
-    if (RegCreateKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, nullptr,
-                        REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &hKey, nullptr) != ERROR_SUCCESS) {
-        return;
-    }
-
-    DWORD dwordValue = static_cast<DWORD>(value);
-    RegSetValueExW(hKey, name, 0, REG_DWORD, (LPBYTE)&dwordValue, sizeof(dwordValue));
-    RegCloseKey(hKey);
 }
 
 std::wstring Settings::GetString(const wchar_t* name, const wchar_t* defaultValue) {
@@ -312,8 +281,51 @@ void Settings::SaveExcludedApps() {
     SetString(L"ExcludedApps", list);
 }
 
+// JSON helpers
+static std::wstring EscapeJsonString(const std::wstring& s) {
+    std::wstring result;
+    result.reserve(s.size());
+    for (wchar_t c : s) {
+        if (c == L'\\') result += L"\\\\";
+        else if (c == L'"') result += L"\\\"";
+        else result += c;
+    }
+    return result;
+}
+
+static void WriteShortcutsJsonArray(std::wstringstream& ss, const std::vector<TextShortcut>& shortcuts) {
+    for (size_t i = 0; i < shortcuts.size(); i++) {
+        ss << L"    {\"key\": \"" << EscapeJsonString(shortcuts[i].key)
+           << L"\", \"value\": \"" << EscapeJsonString(shortcuts[i].value) << L"\"}";
+        if (i < shortcuts.size() - 1) ss << L",";
+        ss << L"\n";
+    }
+}
+
+static std::vector<TextShortcut> ParseShortcutsJsonArray(const std::wstring& json, const std::wstring& key) {
+    std::vector<TextShortcut> result;
+    size_t shortcutsPos = json.find(L"\"" + key + L"\":");
+    if (shortcutsPos == std::wstring::npos) return result;
+    size_t arrStart = json.find(L"[", shortcutsPos);
+    size_t arrEnd = json.find(L"]", arrStart);
+    if (arrStart == std::wstring::npos || arrEnd == std::wstring::npos) return result;
+    std::wstring arrSection = json.substr(arrStart, arrEnd - arrStart + 1);
+    size_t pos = 0;
+    while ((pos = arrSection.find(L"{", pos)) != std::wstring::npos) {
+        size_t objEnd = arrSection.find(L"}", pos);
+        if (objEnd == std::wstring::npos) break;
+        std::wstring obj = arrSection.substr(pos, objEnd - pos + 1);
+        std::wstring k = ExtractJsonString(obj, L"key");
+        std::wstring v = ExtractJsonString(obj, L"value");
+        if (!k.empty() && !v.empty()) {
+            result.push_back({k, v});
+        }
+        pos = objEnd + 1;
+    }
+    return result;
+}
+
 // JSON Export/Import (Feature 5)
-// Simple JSON format without external library
 std::wstring Settings::ExportToJson() const {
     std::wstringstream ss;
     ss << L"{\n";
@@ -350,26 +362,7 @@ std::wstring Settings::ExportToJson() const {
     }
     ss << L"  ],\n";
     ss << L"  \"shortcuts\": [\n";
-    for (size_t i = 0; i < shortcuts.size(); i++) {
-        // Escape special characters in JSON strings
-        std::wstring key = shortcuts[i].key;
-        std::wstring value = shortcuts[i].value;
-        // Simple escaping for quotes and backslashes
-        std::wstring escapedKey, escapedValue;
-        for (wchar_t c : key) {
-            if (c == L'\\') escapedKey += L"\\\\";
-            else if (c == L'"') escapedKey += L"\\\"";
-            else escapedKey += c;
-        }
-        for (wchar_t c : value) {
-            if (c == L'\\') escapedValue += L"\\\\";
-            else if (c == L'"') escapedValue += L"\\\"";
-            else escapedValue += c;
-        }
-        ss << L"    {\"key\": \"" << escapedKey << L"\", \"value\": \"" << escapedValue << L"\"}";
-        if (i < shortcuts.size() - 1) ss << L",";
-        ss << L"\n";
-    }
+    WriteShortcutsJsonArray(ss, shortcuts);
     ss << L"  ]\n";
     ss << L"}\n";
     return ss.str();
@@ -436,10 +429,12 @@ bool Settings::ImportFromJson(const std::wstring& json) {
     size_t settingsPos = json.find(L"\"settings\":");
     if (settingsPos == std::wstring::npos) return false;
     size_t settingsEnd = json.find(L"}", settingsPos);
+    if (settingsEnd == std::wstring::npos) return false;
     std::wstring settingsSection = json.substr(settingsPos, settingsEnd - settingsPos + 1);
 
     enabled = ExtractJsonBool(settingsSection, L"enabled", true);
-    method = static_cast<InputMethod>(ExtractJsonInt(settingsSection, L"method", 0));
+    int methodInt = ExtractJsonInt(settingsSection, L"method", 0);
+    method = (methodInt >= 0 && methodInt <= 1) ? static_cast<InputMethod>(methodInt) : InputMethod::Telex;
     modernTone = ExtractJsonBool(settingsSection, L"modernTone", true);
     englishAutoRestore = ExtractJsonBool(settingsSection, L"englishAutoRestore", true);
     autoCapitalize = ExtractJsonBool(settingsSection, L"autoCapitalize", false);
@@ -458,6 +453,7 @@ bool Settings::ImportFromJson(const std::wstring& json) {
     size_t hotkeyPos = json.find(L"\"hotkey\":");
     if (hotkeyPos != std::wstring::npos) {
         size_t hotkeyEnd = json.find(L"}", hotkeyPos);
+        if (hotkeyEnd == std::wstring::npos) return false;
         std::wstring hotkeySection = json.substr(hotkeyPos, hotkeyEnd - hotkeyPos + 1);
         toggleHotkey.ctrl = ExtractJsonBool(hotkeySection, L"ctrl", true);
         toggleHotkey.shift = ExtractJsonBool(hotkeySection, L"shift", false);
@@ -488,28 +484,7 @@ bool Settings::ImportFromJson(const std::wstring& json) {
     }
 
     // Find shortcuts array
-    shortcuts.clear();
-    size_t shortcutsPos = json.find(L"\"shortcuts\":");
-    if (shortcutsPos != std::wstring::npos) {
-        size_t arrStart = json.find(L"[", shortcutsPos);
-        size_t arrEnd = json.find(L"]", arrStart);
-        if (arrStart != std::wstring::npos && arrEnd != std::wstring::npos) {
-            std::wstring arrSection = json.substr(arrStart, arrEnd - arrStart + 1);
-            size_t pos = 0;
-            while ((pos = arrSection.find(L"{", pos)) != std::wstring::npos) {
-                size_t objEnd = arrSection.find(L"}", pos);
-                if (objEnd == std::wstring::npos) break;
-                std::wstring obj = arrSection.substr(pos, objEnd - pos + 1);
-                std::wstring key = ExtractJsonString(obj, L"key");
-                std::wstring value = ExtractJsonString(obj, L"value");
-                if (!key.empty() && !value.empty()) {
-                    shortcuts.push_back({key, value});
-                }
-                pos = objEnd + 1;
-            }
-        }
-    }
-
+    shortcuts = ParseShortcutsJsonArray(json, L"shortcuts");
     if (shortcuts.empty()) {
         shortcuts = DefaultShortcuts();
     }
@@ -517,53 +492,53 @@ bool Settings::ImportFromJson(const std::wstring& json) {
     return true;
 }
 
-bool Settings::ExportToFile(const wchar_t* path) {
-    std::wstring json = Instance().ExportToJson();
+// Common file I/O helpers (DRY: shared by settings + shortcuts export/import)
+static bool WriteWideStringToFile(const wchar_t* path, const std::wstring& content) {
     HANDLE hFile = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) return false;
-
-    // Write BOM for UTF-16 LE
     BYTE bom[2] = {0xFF, 0xFE};
     DWORD written;
     WriteFile(hFile, bom, 2, &written, nullptr);
-    WriteFile(hFile, json.c_str(), static_cast<DWORD>(json.length() * sizeof(wchar_t)), &written, nullptr);
+    WriteFile(hFile, content.c_str(), static_cast<DWORD>(content.length() * sizeof(wchar_t)), &written, nullptr);
     CloseHandle(hFile);
     return true;
 }
 
-bool Settings::ImportFromFile(const wchar_t* path) {
+static std::wstring ReadWideStringFromFile(const wchar_t* path) {
     HANDLE hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (hFile == INVALID_HANDLE_VALUE) return false;
-
+    if (hFile == INVALID_HANDLE_VALUE) return L"";
     DWORD fileSize = GetFileSize(hFile, nullptr);
     if (fileSize == INVALID_FILE_SIZE || fileSize < 4) {
         CloseHandle(hFile);
-        return false;
+        return L"";
     }
-
     std::vector<BYTE> buffer(fileSize + 2);
     DWORD bytesRead;
     if (!ReadFile(hFile, buffer.data(), fileSize, &bytesRead, nullptr)) {
         CloseHandle(hFile);
-        return false;
+        return L"";
     }
     CloseHandle(hFile);
     buffer[bytesRead] = 0;
     buffer[bytesRead + 1] = 0;
-
-    std::wstring json;
-    // Check for UTF-16 LE BOM
     if (buffer[0] == 0xFF && buffer[1] == 0xFE) {
-        json = reinterpret_cast<const wchar_t*>(buffer.data() + 2);
-    } else {
-        // Assume UTF-8
-        int wideLen = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, nullptr, 0);
-        if (wideLen > 0) {
-            json.resize(wideLen);
-            MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, &json[0], wideLen);
-        }
+        return reinterpret_cast<const wchar_t*>(buffer.data() + 2);
     }
+    int wideLen = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, nullptr, 0);
+    if (wideLen > 0) {
+        std::wstring result(wideLen, 0);
+        MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, &result[0], wideLen);
+        return result;
+    }
+    return L"";
+}
 
+bool Settings::ExportToFile(const wchar_t* path) {
+    return WriteWideStringToFile(path, Instance().ExportToJson());
+}
+
+bool Settings::ImportFromFile(const wchar_t* path) {
+    std::wstring json = ReadWideStringFromFile(path);
     if (json.empty()) return false;
     if (!Instance().ImportFromJson(json)) return false;
     Instance().Save();
@@ -576,22 +551,7 @@ std::wstring Settings::ExportShortcutsToJson() const {
     ss << L"{\n";
     ss << L"  \"version\": 1,\n";
     ss << L"  \"shortcuts\": [\n";
-    for (size_t i = 0; i < shortcuts.size(); i++) {
-        std::wstring escapedKey, escapedValue;
-        for (wchar_t c : shortcuts[i].key) {
-            if (c == L'\\') escapedKey += L"\\\\";
-            else if (c == L'"') escapedKey += L"\\\"";
-            else escapedKey += c;
-        }
-        for (wchar_t c : shortcuts[i].value) {
-            if (c == L'\\') escapedValue += L"\\\\";
-            else if (c == L'"') escapedValue += L"\\\"";
-            else escapedValue += c;
-        }
-        ss << L"    {\"key\": \"" << escapedKey << L"\", \"value\": \"" << escapedValue << L"\"}";
-        if (i < shortcuts.size() - 1) ss << L",";
-        ss << L"\n";
-    }
+    WriteShortcutsJsonArray(ss, shortcuts);
     ss << L"  ]\n";
     ss << L"}\n";
     return ss.str();
@@ -602,78 +562,18 @@ bool Settings::ImportShortcutsFromJson(const std::wstring& json) {
     int version = ExtractJsonInt(json, L"version", 0);
     if (version != 1) return false;
 
-    std::vector<TextShortcut> newShortcuts;
-    size_t shortcutsPos = json.find(L"\"shortcuts\":");
-    if (shortcutsPos != std::wstring::npos) {
-        size_t arrStart = json.find(L"[", shortcutsPos);
-        size_t arrEnd = json.find(L"]", arrStart);
-        if (arrStart != std::wstring::npos && arrEnd != std::wstring::npos) {
-            std::wstring arrSection = json.substr(arrStart, arrEnd - arrStart + 1);
-            size_t pos = 0;
-            while ((pos = arrSection.find(L"{", pos)) != std::wstring::npos) {
-                size_t objEnd = arrSection.find(L"}", pos);
-                if (objEnd == std::wstring::npos) break;
-                std::wstring obj = arrSection.substr(pos, objEnd - pos + 1);
-                std::wstring key = ExtractJsonString(obj, L"key");
-                std::wstring value = ExtractJsonString(obj, L"value");
-                if (!key.empty() && !value.empty()) {
-                    newShortcuts.push_back({key, value});
-                }
-                pos = objEnd + 1;
-            }
-        }
-    }
-
+    auto newShortcuts = ParseShortcutsJsonArray(json, L"shortcuts");
     if (newShortcuts.empty()) return false;
     shortcuts = newShortcuts;
     return true;
 }
 
 bool Settings::ExportShortcutsToFile(const wchar_t* path) {
-    std::wstring json = Instance().ExportShortcutsToJson();
-    HANDLE hFile = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (hFile == INVALID_HANDLE_VALUE) return false;
-
-    // Write BOM for UTF-16 LE
-    BYTE bom[2] = {0xFF, 0xFE};
-    DWORD written;
-    WriteFile(hFile, bom, 2, &written, nullptr);
-    WriteFile(hFile, json.c_str(), static_cast<DWORD>(json.length() * sizeof(wchar_t)), &written, nullptr);
-    CloseHandle(hFile);
-    return true;
+    return WriteWideStringToFile(path, Instance().ExportShortcutsToJson());
 }
 
 bool Settings::ImportShortcutsFromFile(const wchar_t* path) {
-    HANDLE hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (hFile == INVALID_HANDLE_VALUE) return false;
-
-    DWORD fileSize = GetFileSize(hFile, nullptr);
-    if (fileSize == INVALID_FILE_SIZE || fileSize < 4) {
-        CloseHandle(hFile);
-        return false;
-    }
-
-    std::vector<BYTE> buffer(fileSize + 2);
-    DWORD bytesRead;
-    if (!ReadFile(hFile, buffer.data(), fileSize, &bytesRead, nullptr)) {
-        CloseHandle(hFile);
-        return false;
-    }
-    CloseHandle(hFile);
-    buffer[bytesRead] = 0;
-    buffer[bytesRead + 1] = 0;
-
-    std::wstring json;
-    if (buffer[0] == 0xFF && buffer[1] == 0xFE) {
-        json = reinterpret_cast<const wchar_t*>(buffer.data() + 2);
-    } else {
-        int wideLen = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, nullptr, 0);
-        if (wideLen > 0) {
-            json.resize(wideLen);
-            MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(buffer.data()), bytesRead, &json[0], wideLen);
-        }
-    }
-
+    std::wstring json = ReadWideStringFromFile(path);
     if (json.empty()) return false;
     if (!Instance().ImportShortcutsFromJson(json)) return false;
     Instance().Save();

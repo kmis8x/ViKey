@@ -2,11 +2,9 @@
 // keyboard_hook.cpp
 // Project: ViKey | Author: Trần Công Sinh | https://github.com/kmis8x/ViKey
 
-#define _CRT_SECURE_NO_WARNINGS
 #include "keyboard_hook.h"
 #include "keycodes.h"
 #include "rust_bridge.h"
-#include <cstdio>
 
 // Win32 Constants
 // WH_KEYBOARD_LL is defined in Windows.h as 13
@@ -32,17 +30,6 @@ static KeyboardHook* g_instance = nullptr;
 // Global keyboard hook procedure (not a class member)
 // Use __declspec(noinline) to prevent optimization that might affect the callback
 __declspec(noinline) static LRESULT CALLBACK GlobalLowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    // Debug: immediately try to create log file on first call
-    static bool logInitialized = false;
-    if (!logInitialized) {
-        logInitialized = true;
-        FILE* f = fopen("D:\\CK\\ViKey\\app-native\\hookproc_global.log", "w");
-        if (f) {
-            fprintf(f, "GlobalLowLevelKeyboardProc first called! g_instance=%p\n", (void*)g_instance);
-            fclose(f);
-        }
-    }
-
     if (g_instance) {
         return g_instance->ProcessKey(nCode, wParam, lParam);
     }
@@ -69,13 +56,11 @@ KeyboardHook::~KeyboardHook() {
 bool KeyboardHook::Start() {
     if (m_hookId != nullptr) return true;
 
-    // Clear any previous error
     SetLastError(0);
 
-    // For WH_KEYBOARD_LL, use user32.dll module handle (same as .NET implementation)
+    // For WH_KEYBOARD_LL, use user32.dll module handle
     HMODULE hMod = LoadLibraryW(L"user32.dll");
 
-    // Use the global function instead of static member function
     m_hookId = SetWindowsHookExW(
         WH_KEYBOARD_LL,
         GlobalLowLevelKeyboardProc,
@@ -83,20 +68,6 @@ bool KeyboardHook::Start() {
         0
     );
 
-    // Get error immediately after the call
-    DWORD err = GetLastError();
-    DWORD tid = GetCurrentThreadId();
-
-    // Debug: log hook installation result
-    FILE* startLog = fopen("D:\\CK\\ViKey\\app-native\\hook_start.log", "w");
-    if (startLog) {
-        fprintf(startLog, "Hook Start: hookId=%p, error=%lu, callback=%p, thread=%lu, hMod=%p\n",
-                (void*)m_hookId, err, (void*)GlobalLowLevelKeyboardProc, tid, (void*)hMod);
-        fprintf(startLog, "g_instance=%p\n", (void*)g_instance);
-        fclose(startLog);
-    }
-
-    // Also show a message box if hook installation failed
     if (m_hookId == nullptr) {
         MessageBoxW(nullptr, L"Failed to install keyboard hook!", L"Hook Error", MB_ICONERROR);
     }
@@ -111,35 +82,7 @@ void KeyboardHook::Stop() {
     }
 }
 
-LRESULT CALLBACK KeyboardHook::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    // Debug: immediately try to create log file on first call
-    static bool logInitialized = false;
-    if (!logInitialized) {
-        logInitialized = true;
-        FILE* f = fopen("D:\\CK\\ViKey\\app-native\\hookproc_init.log", "w");
-        if (f) {
-            fprintf(f, "LowLevelKeyboardProc first called! g_instance=%p\n", (void*)g_instance);
-            fclose(f);
-        }
-    }
-
-    if (g_instance) {
-        return g_instance->ProcessKey(nCode, wParam, lParam);
-    }
-    return CallNextHookEx(nullptr, nCode, wParam, lParam);
-}
-
 LRESULT KeyboardHook::ProcessKey(int nCode, WPARAM wParam, LPARAM lParam) {
-    // Debug: log ALL hook calls
-    static FILE* hookDebug = nullptr;
-    if (!hookDebug) {
-        hookDebug = fopen("D:\\CK\\ViKey\\app-native\\hook_debug.log", "w");
-        if (hookDebug) {
-            fprintf(hookDebug, "Hook initialized\n");
-            fflush(hookDebug);
-        }
-    }
-
     // Prevent recursion
     if (m_isProcessing) {
         return CallNextHookEx(m_hookId, nCode, wParam, lParam);
@@ -148,12 +91,6 @@ LRESULT KeyboardHook::ProcessKey(int nCode, WPARAM wParam, LPARAM lParam) {
     // Only process key down events
     if (nCode >= 0 && (wParam == WM_KEYDOWN_MSG || wParam == WM_SYSKEYDOWN_MSG)) {
         auto* hookStruct = reinterpret_cast<KBDLLHOOKSTRUCT_DATA*>(lParam);
-        if (hookDebug) {
-            fprintf(hookDebug, "KeyDown: vk=0x%02X, flags=0x%08X, extra=0x%llX\n",
-                    (unsigned)hookStruct->vkCode, (unsigned)hookStruct->flags,
-                    (unsigned long long)hookStruct->dwExtraInfo);
-            fflush(hookDebug);
-        }
 
         // Skip ONLY our own injected keys (identified by our marker)
         // Don't skip other injected keys - they may come from remote desktop/AnyDesk
