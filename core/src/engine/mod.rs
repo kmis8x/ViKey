@@ -403,7 +403,7 @@ impl Engine {
             auto_capitalize_used: false,
             saw_sentence_ending: false,
             allow_foreign_consonants: false, // Default: OFF
-            shortcuts_enabled: true, // Default: ON
+            shortcuts_enabled: true,         // Default: ON
         }
     }
 
