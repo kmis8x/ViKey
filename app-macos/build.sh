@@ -66,8 +66,10 @@ swiftc \
     -o "$OUTPUT_DIR/Contents/MacOS/ViKey" \
     "${SOURCES[@]}"
 
-# Copy Info.plist
+# Copy Info.plist and resources
 cp "$APP_DIR/Resources/Info.plist" "$OUTPUT_DIR/Contents/"
+cp "$APP_DIR/Resources/AppIcon.icns" "$OUTPUT_DIR/Contents/Resources/" 2>/dev/null || true
+cp "$APP_DIR/Resources/ViKey.tiff" "$OUTPUT_DIR/Contents/Resources/" 2>/dev/null || true
 
 # Step 3: Sign (development)
 echo ""

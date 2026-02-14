@@ -94,96 +94,100 @@ std::wstring EncodingConverter::Convert(const std::wstring& text, VietEncoding f
     return text;
 }
 
+// Lazily-built O(1) lookup tables for encoding conversion
+static const std::unordered_map<wchar_t, wchar_t>& GetUnicodeToVNIMap() {
+    static auto map = []() {
+        std::unordered_map<wchar_t, wchar_t> m;
+        size_t len = wcslen(UNICODE_VIET);
+        size_t vniLen = wcslen(VNI_VIET);
+        for (size_t i = 0; i < len && i < vniLen; i++) {
+            m[UNICODE_VIET[i]] = VNI_VIET[i];
+        }
+        return m;
+    }();
+    return map;
+}
+
+static const std::unordered_map<wchar_t, wchar_t>& GetVNIToUnicodeMap() {
+    static auto map = []() {
+        std::unordered_map<wchar_t, wchar_t> m;
+        size_t vniLen = wcslen(VNI_VIET);
+        size_t uniLen = wcslen(UNICODE_VIET);
+        for (size_t i = 0; i < vniLen && i < uniLen; i++) {
+            m[VNI_VIET[i]] = UNICODE_VIET[i];
+        }
+        return m;
+    }();
+    return map;
+}
+
+static const std::unordered_map<wchar_t, wchar_t>& GetUnicodeToTCVN3Map() {
+    static auto map = []() {
+        std::unordered_map<wchar_t, wchar_t> m;
+        size_t uniLen = wcslen(UNICODE_VIET);
+        size_t tcvnLen = sizeof(TCVN3_VIET);
+        for (size_t i = 0; i < uniLen && i < tcvnLen; i++) {
+            m[UNICODE_VIET[i]] = static_cast<wchar_t>(TCVN3_VIET[i]);
+        }
+        return m;
+    }();
+    return map;
+}
+
+static const std::unordered_map<unsigned char, wchar_t>& GetTCVN3ToUnicodeMap() {
+    static auto map = []() {
+        std::unordered_map<unsigned char, wchar_t> m;
+        size_t tcvnLen = sizeof(TCVN3_VIET);
+        size_t uniLen = wcslen(UNICODE_VIET);
+        for (size_t i = 0; i < tcvnLen && i < uniLen; i++) {
+            m[TCVN3_VIET[i]] = UNICODE_VIET[i];
+        }
+        return m;
+    }();
+    return map;
+}
+
 std::wstring EncodingConverter::UnicodeToVNI(const std::wstring& text) {
+    const auto& map = GetUnicodeToVNIMap();
     std::wstring result;
     result.reserve(text.size());
-
     for (wchar_t c : text) {
-        bool found = false;
-        size_t len = wcslen(UNICODE_VIET);
-        for (size_t i = 0; i < len && i < wcslen(VNI_VIET); i++) {
-            if (c == UNICODE_VIET[i]) {
-                result += VNI_VIET[i];
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            result += c;
-        }
+        auto it = map.find(c);
+        result += (it != map.end()) ? it->second : c;
     }
-
     return result;
 }
 
 std::wstring EncodingConverter::VNIToUnicode(const std::wstring& text) {
+    const auto& map = GetVNIToUnicodeMap();
     std::wstring result;
     result.reserve(text.size());
-
     for (wchar_t c : text) {
-        bool found = false;
-        size_t len = wcslen(VNI_VIET);
-        for (size_t i = 0; i < len && i < wcslen(UNICODE_VIET); i++) {
-            if (c == VNI_VIET[i]) {
-                result += UNICODE_VIET[i];
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            result += c;
-        }
+        auto it = map.find(c);
+        result += (it != map.end()) ? it->second : c;
     }
-
     return result;
 }
 
 std::wstring EncodingConverter::UnicodeToTCVN3(const std::wstring& text) {
+    const auto& map = GetUnicodeToTCVN3Map();
     std::wstring result;
     result.reserve(text.size());
-
-    size_t unicodeLen = wcslen(UNICODE_VIET);
-    size_t tcvnLen = sizeof(TCVN3_VIET);
-
     for (wchar_t c : text) {
-        bool found = false;
-        for (size_t i = 0; i < unicodeLen && i < tcvnLen; i++) {
-            if (c == UNICODE_VIET[i]) {
-                result += static_cast<wchar_t>(TCVN3_VIET[i]);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            result += c;
-        }
+        auto it = map.find(c);
+        result += (it != map.end()) ? it->second : c;
     }
-
     return result;
 }
 
 std::wstring EncodingConverter::TCVN3ToUnicode(const std::wstring& text) {
+    const auto& map = GetTCVN3ToUnicodeMap();
     std::wstring result;
     result.reserve(text.size());
-
-    size_t unicodeLen = wcslen(UNICODE_VIET);
-    size_t tcvnLen = sizeof(TCVN3_VIET);
-
     for (wchar_t c : text) {
-        bool found = false;
-        unsigned char byte = static_cast<unsigned char>(c);
-        for (size_t i = 0; i < tcvnLen && i < unicodeLen; i++) {
-            if (byte == TCVN3_VIET[i]) {
-                result += UNICODE_VIET[i];
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            result += c;
-        }
+        auto it = map.find(static_cast<unsigned char>(c));
+        result += (it != map.end()) ? it->second : c;
     }
-
     return result;
 }
 

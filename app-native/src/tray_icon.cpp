@@ -32,10 +32,7 @@ TrayIcon::~TrayIcon() {
 bool TrayIcon::Initialize(HWND hWnd, HINSTANCE hInstance) {
     if (m_initialized) return true;
 
-    // Initialize GDI+ for icon creation
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+    // GDI+ already initialized in main.cpp - no duplicate init needed
 
     // Load icons from embedded resources
     m_iconVN = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(IDI_ICON_VN), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);

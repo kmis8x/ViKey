@@ -18,6 +18,17 @@ jobs:
       with:
         targets: x86_64-unknown-linux-gnu
 
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          core/target
+          app-linux/target
+        key: linux-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: linux-cargo-
+
     - name: Install IBus development libraries
       run: |
         sudo apt-get update
@@ -38,23 +49,22 @@ jobs:
 
     - name: Create release package
       run: |
+        VERSION="${GITHUB_REF_NAME#v}"
         mkdir -p release/vikey-linux
         cp app-linux/target/release/ibus-engine-vikey release/vikey-linux/
         cp app-linux/data/vikey.xml release/vikey-linux/
         cp app-linux/README.md release/vikey-linux/
         cp app-linux/install.sh release/vikey-linux/ 2>/dev/null || true
-        cd release && zip -r ViKey-Linux-x86_64.zip vikey-linux/
+        cd release && zip -r "ViKey-v${VERSION}-linux-x86_64.zip" vikey-linux/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ViKey-Linux-x86_64
-        path: release/ViKey-Linux-x86_64.zip
+        path: release/ViKey-v*-linux-x86_64.zip
 
     - name: Upload to Release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
-        files: release/ViKey-Linux-x86_64.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        files: release/ViKey-v*-linux-x86_64.zip

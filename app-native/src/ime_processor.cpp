@@ -2,10 +2,8 @@
 // ime_processor.cpp
 // Project: ViKey | Author: Trần Công Sinh | https://github.com/kmis8x/ViKey
 
-#define _CRT_SECURE_NO_WARNINGS
 #include "ime_processor.h"
 #include "keycodes.h"
-#include <cstdio>
 
 ImeProcessor& ImeProcessor::Instance() {
     static ImeProcessor instance;
@@ -156,16 +154,6 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
 
     int vk = event.vkCode;
 
-    // Debug: log key presses to file
-    static FILE* debugFile = nullptr;
-    if (!debugFile) {
-        debugFile = fopen("D:\\CK\\ViKey\\app-native\\debug.log", "w");
-    }
-    if (debugFile) {
-        fprintf(debugFile, "Key: 0x%02X, shift=%d, caps=%d\n", vk, event.shift, event.capsLock);
-        fflush(debugFile);
-    }
-
     // Handle backspace for shortcut buffer
     if (vk == VK_BACK_KEY) {
         ShortcutManager::Instance().OnBackspace();
@@ -193,21 +181,8 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
     // Process through Rust engine
     ImeResult result = RustBridge::Instance().ProcessKeyExt(macKeycode, caps, false, event.shift);
 
-    // Debug: log Rust result
-    if (debugFile) {
-        fprintf(debugFile, "  -> action=%d, count=%d, bs=%d, consumed=%d\n",
-                (int)result.action, result.count, result.backspace, result.IsKeyConsumed() ? 1 : 0);
-        fflush(debugFile);
-    }
-
     if (result.action == ImeAction::Send && result.count > 0) {
-        // Send replacement text
         std::wstring text = result.GetText();
-        if (debugFile) {
-            fprintf(debugFile, "  -> Sending text (len=%zu), backspaces=%d\n",
-                    text.length(), result.backspace);
-            fflush(debugFile);
-        }
         // For shortcut expansion: use clipboard mode for reliability
         // - backspaces > 4: indicates shortcut expansion (e.g., "vn " -> "Việt Nam ")
         // - text.length() > 15: long replacement text causes timing issues with SendInput

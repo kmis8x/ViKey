@@ -43,6 +43,7 @@ void ime_modern(bool modern);
 void ime_english_auto_restore(bool enabled);
 void ime_auto_capitalize(bool enabled);
 void ime_allow_foreign_consonants(bool enabled);
+void ime_shortcuts_enabled(bool enabled);
 
 // Shortcuts
 void ime_add_shortcut(const char* trigger, const char* replacement);
