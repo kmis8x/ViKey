@@ -155,10 +155,30 @@ void TextSender::SendTextClipboard(const std::wstring& text, int backspaces) {
         Sleep(20);
     }
 
-    // Step 2: Set text to clipboard
+    // Step 2: Save previous clipboard content, set our text
     if (!OpenClipboard(nullptr)) return;
-    EmptyClipboard();
 
+    // Save previous clipboard content
+    HGLOBAL hSaved = nullptr;
+    if (IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+        HGLOBAL hClip = GetClipboardData(CF_UNICODETEXT);
+        if (hClip) {
+            SIZE_T clipSize = GlobalSize(hClip);
+            hSaved = GlobalAlloc(GMEM_MOVEABLE, clipSize);
+            if (hSaved) {
+                void* pSrc = GlobalLock(hClip);
+                void* pDst = GlobalLock(hSaved);
+                if (pSrc && pDst) {
+                    memcpy(pDst, pSrc, clipSize);
+                }
+                GlobalUnlock(hClip);
+                GlobalUnlock(hSaved);
+            }
+        }
+    }
+
+    // Set our text to clipboard
+    EmptyClipboard();
     size_t size = (text.length() + 1) * sizeof(wchar_t);
     HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, size);
     if (hGlobal) {
@@ -175,19 +195,25 @@ void TextSender::SendTextClipboard(const std::wstring& text, int backspaces) {
 
     // Step 3: Send Ctrl+V
     Sleep(10);
-
-    // Press Ctrl
     keybd_event(VK_CONTROL, 0x1D, 0, INJECTED_KEY_MARKER);
     Sleep(5);
-
-    // Press V
     keybd_event('V', 0x2F, 0, INJECTED_KEY_MARKER);
     Sleep(10);
-
-    // Release V
     keybd_event('V', 0x2F, KEYEVENTF_KEYUP_FLAG, INJECTED_KEY_MARKER);
     Sleep(5);
-
-    // Release Ctrl
     keybd_event(VK_CONTROL, 0x1D, KEYEVENTF_KEYUP_FLAG, INJECTED_KEY_MARKER);
+
+    // Step 4: Restore previous clipboard content
+    if (hSaved) {
+        Sleep(50);
+        if (OpenClipboard(nullptr)) {
+            EmptyClipboard();
+            if (!SetClipboardData(CF_UNICODETEXT, hSaved)) {
+                GlobalFree(hSaved);  // Free on failure (ownership stays with caller)
+            }
+            CloseClipboard();
+        } else {
+            GlobalFree(hSaved);
+        }
+    }
 }

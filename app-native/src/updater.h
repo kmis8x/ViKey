@@ -63,9 +63,7 @@ private:
     // Compare version strings (using Rust FFI)
     bool IsNewerVersion(const char* current, const char* latest);
 
-    // Async callback storage
     HWND m_callbackWnd = nullptr;
-    std::function<void(const UpdateInfo&)> m_callback;
 };
 
 // Custom message for async update check completion

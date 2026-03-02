@@ -51,9 +51,6 @@ private:
     KeyboardHook(const KeyboardHook&) = delete;
     KeyboardHook& operator=(const KeyboardHook&) = delete;
 
-    // Hook callback
-    static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-
     // Process key event
     LRESULT ProcessKey(int nCode, WPARAM wParam, LPARAM lParam);
 

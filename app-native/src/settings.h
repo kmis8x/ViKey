@@ -87,10 +87,6 @@ private:
     Settings& operator=(const Settings&) = delete;
 
     // Registry helpers
-    bool GetBool(const wchar_t* name, bool defaultValue);
-    void SetBool(const wchar_t* name, bool value);
-    int GetInt(const wchar_t* name, int defaultValue);
-    void SetInt(const wchar_t* name, int value);
     std::wstring GetString(const wchar_t* name, const wchar_t* defaultValue);
     void SetString(const wchar_t* name, const std::wstring& value);
 

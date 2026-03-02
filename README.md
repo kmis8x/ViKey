@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="V.png" alt="ViKey Logo" width="128">
+  <img src="/docs/V.png" alt="ViKey Logo" width="128">
 </p>
 
 # ViKey - Bộ gõ tiếng Việt đa nền tảng
