@@ -135,10 +135,15 @@
     <ClInclude Include="src\tray_icon.h" />
     <ClInclude Include="src\updater.h" />
     <ClInclude Include="src\app_detector.h" />
+    <ClInclude Include="src\dark_mode.h" />
+    <ClInclude Include="src\dialogs.h" />
+    <ClInclude Include="src\encoding_converter.h" />
   </ItemGroup>
 
   <ItemGroup>
     <ClCompile Include="src\app_detector.cpp" />
+    <ClCompile Include="src\dark_mode.cpp" />
+    <ClCompile Include="src\dialogs.cpp" />
     <ClCompile Include="src\encoding_converter.cpp" />
     <ClCompile Include="src\hotkey.cpp" />
     <ClCompile Include="src\ime_processor.cpp" />

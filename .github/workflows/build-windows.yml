@@ -1,0 +1,65 @@
+name: Build Windows Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          core/target
+        key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: windows-cargo-
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Build Rust core (DLL)
+      working-directory: core
+      run: cargo build --release
+
+    - name: Build Win32 application
+      working-directory: app-native
+      run: |
+        MSBuild ViKey.vcxproj /p:Configuration=Release /p:Platform=x64 /m /nologo /v:minimal
+
+    - name: Create release package
+      shell: pwsh
+      run: |
+        $VERSION = "${{ github.ref_name }}".TrimStart("v")
+        $packageName = "ViKey-v${VERSION}-win64"
+        $packageDir = "release/$packageName"
+
+        New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
+
+        Copy-Item "app-native/bin/Release/ViKey.exe" $packageDir
+        Copy-Item "core/target/release/vikey_core.dll" "$packageDir/core.dll"
+
+        Compress-Archive -Path "$packageDir/*" -DestinationPath "release/$packageName.zip"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ViKey-Windows-x64
+        path: release/ViKey-v*-win64.zip
+
+    - name: Upload to Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: release/ViKey-v*-win64.zip
