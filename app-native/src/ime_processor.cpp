@@ -200,23 +200,26 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
         fflush(debugFile);
     }
 
-    if (result.action == ImeAction::Send && result.count > 0) {
-        // Send replacement text
-        std::wstring text = result.GetText();
-        if (debugFile) {
-            fprintf(debugFile, "  -> Sending text (len=%zu), backspaces=%d\n",
-                    text.length(), result.backspace);
-            fflush(debugFile);
+    if (result.action == ImeAction::Send) {
+        if (result.count > 0) {
+            // Send replacement text
+            std::wstring text = result.GetText();
+            if (debugFile) {
+                fprintf(debugFile, "  -> Sending text (len=%zu), backspaces=%d\n",
+                        text.length(), result.backspace);
+                fflush(debugFile);
+            }
+            // For shortcut expansion: use clipboard mode for reliability
+            // - backspaces > 4: indicates shortcut expansion (e.g., "vn " -> "Việt Nam ")
+            // - text.length() > 15: long replacement text causes timing issues with SendInput
+            if (result.backspace > 4 || text.length() > 15) {
+                TextSender::Instance().SendTextClipboard(text, result.backspace);
+            } else {
+                TextSender::Instance().SendText(text, result.backspace);
+            }
         }
-        // For shortcut expansion: use clipboard mode for reliability
-        // - backspaces > 4: indicates shortcut expansion (e.g., "vn " -> "Việt Nam ")
-        // - text.length() > 15: long replacement text causes timing issues with SendInput
-        if (result.backspace > 4 || text.length() > 15) {
-            TextSender::Instance().SendTextClipboard(text, result.backspace);
-        } else {
-            TextSender::Instance().SendText(text, result.backspace);
-        }
-
+        // Block the key: Send action means the engine consumed it
+        // (count==0 means key absorbed with no output, e.g., redundant 'w' in ươ compound)
         event.handled = true;
     } else if (result.IsKeyConsumed()) {
         // Key consumed but no text to send

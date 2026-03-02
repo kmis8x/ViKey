@@ -61,36 +61,43 @@ void TextSender::SendTextFast(const std::wstring& text, int backspaces) {
     // Use keybd_event for backspaces (better compatibility with remote desktop)
     for (int i = 0; i < backspaces; i++) {
         keybd_event(VK_BACK, 0x0E, 0, INJECTED_KEY_MARKER);
-        Sleep(8);
+        Sleep(5);
         keybd_event(VK_BACK, 0x0E, KEYEVENTF_KEYUP_FLAG, INJECTED_KEY_MARKER);
-        Sleep(8);
+        Sleep(5);
     }
 
     // Delay between backspaces and text
     if (backspaces > 0) {
-        Sleep(20);
+        Sleep(10);
     }
 
-    // Send Unicode characters using SendInput (keybd_event doesn't support Unicode)
-    INPUT input[2] = {};
-    input[0].type = INPUT_KEYBOARD;
-    input[1].type = INPUT_KEYBOARD;
+    // Batch all Unicode characters into a single SendInput call for lower latency
+    // Each character needs 2 INPUT events (key down + key up)
+    std::vector<INPUT> inputs;
+    inputs.reserve(text.length() * 2);
 
     for (wchar_t c : text) {
         if (c >= 0xD800 && c <= 0xDBFF) continue;
 
-        input[0].ki.wVk = 0;
-        input[0].ki.wScan = c;
-        input[0].ki.dwFlags = KEYEVENTF_UNICODE_FLAG;
-        input[0].ki.dwExtraInfo = INJECTED_KEY_MARKER;
+        INPUT down = {};
+        down.type = INPUT_KEYBOARD;
+        down.ki.wVk = 0;
+        down.ki.wScan = c;
+        down.ki.dwFlags = KEYEVENTF_UNICODE_FLAG;
+        down.ki.dwExtraInfo = INJECTED_KEY_MARKER;
+        inputs.push_back(down);
 
-        input[1].ki.wVk = 0;
-        input[1].ki.wScan = c;
-        input[1].ki.dwFlags = KEYEVENTF_UNICODE_FLAG | KEYEVENTF_KEYUP_FLAG;
-        input[1].ki.dwExtraInfo = INJECTED_KEY_MARKER;
+        INPUT up = {};
+        up.type = INPUT_KEYBOARD;
+        up.ki.wVk = 0;
+        up.ki.wScan = c;
+        up.ki.dwFlags = KEYEVENTF_UNICODE_FLAG | KEYEVENTF_KEYUP_FLAG;
+        up.ki.dwExtraInfo = INJECTED_KEY_MARKER;
+        inputs.push_back(up);
+    }
 
-        SendInput(2, input, sizeof(INPUT));
-        Sleep(5);
+    if (!inputs.empty()) {
+        SendInput(static_cast<UINT>(inputs.size()), inputs.data(), sizeof(INPUT));
     }
 }
 

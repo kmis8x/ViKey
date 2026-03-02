@@ -6542,8 +6542,14 @@ mod tests {
         ("d9", "đ"),
     ];
 
-    const TELEX_COMPOUND: &[(&str, &str)] =
-        &[("duocw", "dươc"), ("nguoiw", "ngươi"), ("tuoiws", "tưới")];
+    const TELEX_COMPOUND: &[(&str, &str)] = &[
+        ("duocw", "dươc"),
+        ("nguoiw", "ngươi"),
+        ("tuoiws", "tưới"),
+        // Bug: "dduwowjc" should produce "được"
+        ("dduwowjc", "được"),
+        ("dduwowcj", "được"),
+    ];
 
     // ESC restore test cases: input with ESC (\x1b) → expected raw ASCII
     // ESC restores to exactly what user typed (including modifier keys)
