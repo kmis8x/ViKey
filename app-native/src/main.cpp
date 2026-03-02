@@ -612,7 +612,7 @@ void InitSettingsDialog(HWND hDlg) {
     Settings& settings = Settings::Instance();
 
     // Set title like EVKey style with icon
-    SetWindowTextW(hDlg, L"ViKey x64 - 1.3.3 - Nh\u1EB9, nhanh, chu\u1EA9n Vi\u1EC7t");
+    SetWindowTextW(hDlg, L"ViKey x64 - 1.3.4 - Nh\u1EB9, nhanh, chu\u1EA9n Vi\u1EC7t");
     // Set dialog icon (shows in title bar)
     HICON hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(IDI_LOGO));
     SendMessageW(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
