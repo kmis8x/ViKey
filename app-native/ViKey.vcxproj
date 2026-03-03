@@ -144,6 +144,10 @@
     <ClCompile Include="src\app_detector.cpp" />
     <ClCompile Include="src\dark_mode.cpp" />
     <ClCompile Include="src\dialogs.cpp" />
+    <ClCompile Include="src\dialogs_converter.cpp" />
+    <ClCompile Include="src\dialogs_exclude_apps.cpp" />
+    <ClCompile Include="src\dialogs_shortcuts.cpp" />
+    <ClCompile Include="src\dialogs_update.cpp" />
     <ClCompile Include="src\encoding_converter.cpp" />
     <ClCompile Include="src\hotkey.cpp" />
     <ClCompile Include="src\ime_processor.cpp" />
@@ -152,10 +156,15 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\rust_bridge.cpp" />
     <ClCompile Include="src\settings.cpp" />
+    <ClCompile Include="src\settings_file_io.cpp" />
+    <ClCompile Include="src\settings_json.cpp" />
     <ClCompile Include="src\shortcut_manager.cpp" />
     <ClCompile Include="src\text_sender.cpp" />
     <ClCompile Include="src\tray_icon.cpp" />
+    <ClCompile Include="src\tray_icon_drawing.cpp" />
     <ClCompile Include="src\updater.cpp" />
+    <ClCompile Include="src\updater_download.cpp" />
+    <ClCompile Include="src\wndproc.cpp" />
   </ItemGroup>
 
   <ItemGroup>

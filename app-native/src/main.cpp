@@ -79,7 +79,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Check for single instance
     HANDLE hMutex = CreateMutexW(nullptr, TRUE, MUTEX_NAME);
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        // Another instance is already running
         if (hMutex) CloseHandle(hMutex);
         return 0;
     }
@@ -101,14 +100,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 1;
     }
 
-    // Message loop using GetMessage (standard approach for LL hooks)
+    // Message loop
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
 
-    // Cleanup
     CleanupInstance();
     if (hMutex) CloseHandle(hMutex);
 
@@ -130,15 +128,14 @@ bool InitInstance(HINSTANCE hInstance) {
     }
 
     // Create hidden window (for message handling)
-    // Using a regular window (not HWND_MESSAGE) for better compatibility with low-level hooks
     g_hWnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW,  // Don't show in taskbar
+        WS_EX_TOOLWINDOW,
         WINDOW_CLASS,
         APP_NAME,
-        WS_POPUP,          // No border, no title bar
-        -32000, -32000,    // Off-screen position
-        0, 0,              // Zero size
-        nullptr,           // No parent (not HWND_MESSAGE)
+        WS_POPUP,
+        -32000, -32000,
+        0, 0,
+        nullptr,
         nullptr,
         hInstance,
         nullptr);
@@ -158,14 +155,12 @@ bool InitInstance(HINSTANCE hInstance) {
         return false;
     }
 
-    // Apply settings to processor
     ImeProcessor::Instance().ApplySettings();
 
     // Initialize tray icon
     TrayIcon& tray = TrayIcon::Instance();
     tray.Initialize(g_hWnd, hInstance);
 
-    // Set up tray callbacks
     tray.onToggleEnabled = []() {
         ImeProcessor::Instance().ToggleEnabled();
         Settings::Instance().enabled = ImeProcessor::Instance().IsEnabled();
@@ -192,7 +187,7 @@ bool InitInstance(HINSTANCE hInstance) {
         PostMessage(g_hWnd, WM_CLOSE, 0, 0);
     };
 
-    // Register global hotkey (Ctrl+Space)
+    // Register global hotkey
     HotkeyManager& hotkey = HotkeyManager::Instance();
     hotkey.Register(g_hWnd);
     hotkey.SetCallback([]() {
@@ -202,21 +197,16 @@ bool InitInstance(HINSTANCE hInstance) {
         UpdateUI();
     });
 
-    // Start IME processor
     ImeProcessor::Instance().Start();
-
-    // Update UI state
     UpdateUI();
 
-    // Show Settings dialog or Toast on startup based on silentStartup setting
+    // Show Settings dialog or Toast on startup
     if (Settings::Instance().silentStartup) {
-        // Silent mode: show Toast notification only
         const wchar_t* lang = Settings::Instance().enabled ? L"Ti\u1EBFng Vi\u1EC7t" : L"Ti\u1EBFng Anh";
         wchar_t msg[128];
         swprintf_s(msg, L"\u0110ang ch\u1EA1y \u1EDF ch\u1EBF \u0111\u1ED9 %s\nCtrl+Space \u0111\u1EC3 chuy\u1EC3n", lang);
         tray.ShowBalloon(L"B\u1ED9 g\u00F5 ti\u1EBFng Vi\u1EC7t", msg);
     } else {
-        // Normal mode: show Settings dialog
         PostMessage(g_hWnd, WM_COMMAND, IDM_SETTINGS, 0);
     }
 
@@ -229,18 +219,14 @@ bool InitInstance(HINSTANCE hInstance) {
 }
 
 void CleanupInstance() {
-    // Stop processor
     ImeProcessor::Instance().Stop();
 
-    // Unregister hotkey
     if (g_hWnd) {
         HotkeyManager::Instance().Unregister(g_hWnd);
     }
 
-    // Remove tray icon
     TrayIcon::Instance().Shutdown();
 
-    // Shutdown GDI+
     if (g_gdiplusToken) {
         Gdiplus::GdiplusShutdown(g_gdiplusToken);
     }
@@ -255,112 +241,3 @@ void UpdateUI() {
     tray.UpdateTooltip(enabled, method);
     tray.UpdateMenu(enabled, method);
 }
-
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    switch (message) {
-    case WM_TRAYICON_MSG:
-        TrayIcon::Instance().ProcessTrayMessage(hWnd, wParam, lParam);
-        return 0;
-
-    case WM_COMMAND:
-        switch (LOWORD(wParam)) {
-        case IDM_TOGGLE_ENABLED:
-            if (TrayIcon::Instance().onToggleEnabled)
-                TrayIcon::Instance().onToggleEnabled();
-            break;
-
-        case IDM_METHOD_TELEX:
-            if (TrayIcon::Instance().onSetMethod)
-                TrayIcon::Instance().onSetMethod(InputMethod::Telex);
-            break;
-
-        case IDM_METHOD_VNI:
-            if (TrayIcon::Instance().onSetMethod)
-                TrayIcon::Instance().onSetMethod(InputMethod::VNI);
-            break;
-
-        case IDM_ENC_UNICODE:
-        case IDM_ENC_VNI:
-        case IDM_ENC_TCVN3: {
-            OutputEncoding enc = OutputEncoding::Unicode;
-            if (LOWORD(wParam) == IDM_ENC_VNI) enc = OutputEncoding::VNI;
-            else if (LOWORD(wParam) == IDM_ENC_TCVN3) enc = OutputEncoding::TCVN3;
-
-            // Set encoding for current app
-            TextSender::Instance().SetOutputEncoding(enc);
-
-            // Save encoding for current app
-            std::wstring currentApp = AppDetector::Instance().GetForegroundAppName();
-            if (!currentApp.empty()) {
-                AppDetector::Instance().SetAppEncoding(currentApp, static_cast<int>(enc));
-            }
-
-            UpdateUI();
-            break;
-        }
-
-        case IDM_SETTINGS:
-            if (TrayIcon::Instance().onSettings)
-                TrayIcon::Instance().onSettings();
-            break;
-
-        case IDM_ABOUT:
-            if (TrayIcon::Instance().onAbout)
-                TrayIcon::Instance().onAbout();
-            break;
-
-        case IDM_EXPORT_SETTINGS:
-            ExportSettings();
-            break;
-
-        case IDM_IMPORT_SETTINGS:
-            ImportSettings();
-            break;
-
-        case IDM_EXCLUDE_APPS:
-            ShowExcludeAppsDialog();
-            break;
-
-        case IDM_SHORTCUTS:
-            ShowShortcutsDialog();
-            break;
-
-        case IDM_CONVERTER:
-            ShowConverterDialog();
-            break;
-
-        case IDM_CHECK_UPDATE:
-            CheckForUpdatesManual();
-            break;
-
-        case IDM_EXIT:
-            if (TrayIcon::Instance().onExit)
-                TrayIcon::Instance().onExit();
-            break;
-        }
-        return 0;
-
-    case WM_UPDATE_CHECK_COMPLETE: {
-        UpdateInfo* pInfo = reinterpret_cast<UpdateInfo*>(lParam);
-        if (pInfo) {
-            if (pInfo->available) {
-                ShowUpdateDialog(*pInfo);
-            }
-            delete pInfo;
-        }
-        return 0;
-    }
-
-    case WM_HOTKEY:
-        HotkeyManager::Instance().ProcessHotkey(wParam);
-        return 0;
-
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-
-    default:
-        return DefWindowProcW(hWnd, message, wParam, lParam);
-    }
-}
-

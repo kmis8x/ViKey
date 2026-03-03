@@ -3,9 +3,11 @@
 //! Configuration management using XDG config directory.
 //! Settings are stored in ~/.config/vikey/config.json
 
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+
+mod settings_json;
+use settings_json::{parse_json_object, parse_shortcuts_array, escape_json};
 
 /// Text shortcut (trigger -> replacement)
 #[derive(Clone, Debug)]
@@ -118,7 +120,6 @@ impl Settings {
             vikey_core::ime_allow_foreign_consonants(self.allow_foreign_consonants);
             vikey_core::ime_shortcuts_enabled(self.shortcuts_enabled);
 
-            // Load shortcuts
             vikey_core::ime_clear_shortcuts();
             for shortcut in &self.shortcuts {
                 let trigger = std::ffi::CString::new(shortcut.trigger.as_str()).unwrap();
@@ -132,7 +133,6 @@ impl Settings {
     fn parse_json(json: &str) -> Option<Self> {
         let mut settings = Self::default();
 
-        // Simple JSON parsing using string operations
         let map = parse_json_object(json)?;
 
         if let Some(v) = map.get("enabled") {
@@ -169,7 +169,6 @@ impl Settings {
             settings.shortcuts_enabled = v == "true";
         }
 
-        // Parse shortcuts array
         if let Some(shortcuts_str) = map.get("shortcuts") {
             if let Some(shortcuts) = parse_shortcuts_array(shortcuts_str) {
                 settings.shortcuts = shortcuts;
@@ -220,98 +219,4 @@ impl Settings {
             shortcuts_json.join(",\n    ")
         )
     }
-}
-
-/// Simple JSON object parser (returns key-value pairs)
-fn parse_json_object(json: &str) -> Option<HashMap<String, String>> {
-    let mut map = HashMap::new();
-    let content = json.trim().trim_start_matches('{').trim_end_matches('}');
-
-    // Split by commas, but handle nested objects/arrays
-    let mut depth = 0;
-    let mut current = String::new();
-    let mut pairs: Vec<String> = Vec::new();
-
-    for c in content.chars() {
-        match c {
-            '{' | '[' => {
-                depth += 1;
-                current.push(c);
-            }
-            '}' | ']' => {
-                depth -= 1;
-                current.push(c);
-            }
-            ',' if depth == 0 => {
-                pairs.push(current.trim().to_string());
-                current.clear();
-            }
-            _ => current.push(c),
-        }
-    }
-    if !current.trim().is_empty() {
-        pairs.push(current.trim().to_string());
-    }
-
-    for pair in pairs {
-        if let Some(idx) = pair.find(':') {
-            let key = pair[..idx].trim().trim_matches('"').to_string();
-            let value = pair[idx + 1..].trim().trim_matches('"').to_string();
-            map.insert(key, value);
-        }
-    }
-
-    Some(map)
-}
-
-/// Parse shortcuts array from JSON
-fn parse_shortcuts_array(json: &str) -> Option<Vec<Shortcut>> {
-    let mut shortcuts = Vec::new();
-    let content = json.trim().trim_start_matches('[').trim_end_matches(']');
-
-    if content.trim().is_empty() {
-        return Some(shortcuts);
-    }
-
-    // Split by },{
-    let parts: Vec<&str> = content.split("},{").collect();
-
-    for (i, part) in parts.iter().enumerate() {
-        let mut obj = part.to_string();
-        if i == 0 {
-            obj = obj.trim_start_matches('{').to_string();
-        }
-        if i == parts.len() - 1 {
-            obj = obj.trim_end_matches('}').to_string();
-        }
-
-        if let Some(map) = parse_json_object(&format!("{{{}}}", obj)) {
-            if let (Some(trigger), Some(replacement)) = (map.get("trigger"), map.get("replacement")) {
-                shortcuts.push(Shortcut {
-                    trigger: unescape_json(trigger),
-                    replacement: unescape_json(replacement),
-                });
-            }
-        }
-    }
-
-    Some(shortcuts)
-}
-
-/// Escape string for JSON
-fn escape_json(s: &str) -> String {
-    s.replace('\\', "\\\\")
-        .replace('"', "\\\"")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-        .replace('\t', "\\t")
-}
-
-/// Unescape JSON string
-fn unescape_json(s: &str) -> String {
-    s.replace("\\\"", "\"")
-        .replace("\\\\", "\\")
-        .replace("\\n", "\n")
-        .replace("\\r", "\r")
-        .replace("\\t", "\t")
 }

@@ -53,6 +53,14 @@ impl TransformResult {
     }
 }
 
+// Child module: revert operations + reposition helper
+#[path = "transform_revert.rs"]
+mod transform_revert;
+pub use transform_revert::{
+    apply_remove, apply_stroke, revert_mark, revert_stroke, revert_tone,
+};
+pub(super) use transform_revert::reposition_mark_if_needed;
+
 /// Apply tone diacritic transformation (^, ơ, ư, ă)
 ///
 /// Pattern-based: scans buffer for matching vowels
@@ -199,188 +207,6 @@ pub fn apply_mark(buf: &mut Buffer, mark_value: u8, modern: bool) -> TransformRe
     TransformResult::none()
 }
 
-/// Apply stroke transformation (d → đ)
-///
-/// Scans buffer for 'd' at any position
-pub fn apply_stroke(buf: &mut Buffer) -> TransformResult {
-    // Find first 'd' that hasn't been stroked
-    for i in 0..buf.len() {
-        if let Some(c) = buf.get_mut(i) {
-            if c.key == keys::D && !c.stroke {
-                c.stroke = true;
-                return TransformResult::success(vec![i]);
-            }
-        }
-    }
-    TransformResult::none()
-}
-
-/// Remove last diacritic (mark first, then tone)
-pub fn apply_remove(buf: &mut Buffer) -> TransformResult {
-    let vowel_positions = buf.find_vowels();
-
-    // Try to remove mark first
-    for pos in vowel_positions.iter().rev() {
-        if let Some(c) = buf.get_mut(*pos) {
-            if c.mark > mark::NONE {
-                c.mark = mark::NONE;
-                return TransformResult::success(vec![*pos]);
-            }
-        }
-    }
-
-    // Then try to remove tone
-    for pos in vowel_positions.iter().rev() {
-        if let Some(c) = buf.get_mut(*pos) {
-            if c.tone > tone::NONE {
-                c.tone = tone::NONE;
-                return TransformResult::success(vec![*pos]);
-            }
-        }
-    }
-
-    TransformResult::none()
-}
-
-/// Revert tone transformation
-pub fn revert_tone(buf: &mut Buffer, target_key: u16) -> TransformResult {
-    let vowel_positions = buf.find_vowels();
-
-    for pos in vowel_positions.iter().rev() {
-        if let Some(c) = buf.get_mut(*pos) {
-            if c.key == target_key && c.tone > tone::NONE {
-                c.tone = tone::NONE;
-                return TransformResult::success(vec![*pos]);
-            }
-        }
-    }
-
-    TransformResult::none()
-}
-
-/// Revert mark transformation
-pub fn revert_mark(buf: &mut Buffer) -> TransformResult {
-    let vowel_positions = buf.find_vowels();
-
-    for pos in vowel_positions.iter().rev() {
-        if let Some(c) = buf.get_mut(*pos) {
-            if c.mark > mark::NONE {
-                c.mark = mark::NONE;
-                return TransformResult::success(vec![*pos]);
-            }
-        }
-    }
-
-    TransformResult::none()
-}
-
-/// Revert stroke transformation
-pub fn revert_stroke(buf: &mut Buffer) -> TransformResult {
-    // Find stroked 'd' and un-stroke it
-    for i in 0..buf.len() {
-        if let Some(c) = buf.get_mut(i) {
-            if c.key == keys::D && c.stroke {
-                c.stroke = false;
-                return TransformResult::success(vec![i]);
-            }
-        }
-    }
-    TransformResult::none()
-}
-
-/// Reposition mark after tone change if needed
-fn reposition_mark_if_needed(buf: &mut Buffer) {
-    // Find current mark
-    let mark_info: Option<(usize, u8)> = buf
-        .iter()
-        .enumerate()
-        .find(|(_, c)| c.mark > 0)
-        .map(|(i, c)| (i, c.mark));
-
-    if let Some((old_pos, mark_value)) = mark_info {
-        let vowels = utils::collect_vowels(buf);
-        if vowels.is_empty() {
-            return;
-        }
-
-        let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
-        let has_final = utils::has_final_consonant(buf, last_vowel_pos);
-        let has_qu = utils::has_qu_initial(buf);
-        let has_gi = utils::has_gi_initial(buf);
-        let new_pos = Phonology::find_tone_position(&vowels, has_final, true, has_qu, has_gi);
-
-        if new_pos != old_pos {
-            // Clear old mark
-            if let Some(c) = buf.get_mut(old_pos) {
-                c.mark = 0;
-            }
-            // Set new mark
-            if let Some(c) = buf.get_mut(new_pos) {
-                c.mark = mark_value;
-            }
-        }
-    }
-}
-
 #[cfg(test)]
-mod tests {
-    use super::super::buffer::Char;
-    use super::*;
-
-    fn setup_buffer(s: &str) -> Buffer {
-        let mut buf = Buffer::new();
-        for ch in s.chars() {
-            let key = match ch.to_ascii_lowercase() {
-                'a' => keys::A,
-                'b' => keys::B,
-                'c' => keys::C,
-                'd' => keys::D,
-                'e' => keys::E,
-                'g' => keys::G,
-                'h' => keys::H,
-                'i' => keys::I,
-                'n' => keys::N,
-                'o' => keys::O,
-                'u' => keys::U,
-                _ => continue,
-            };
-            buf.push(Char::new(key, ch.is_uppercase()));
-        }
-        buf
-    }
-
-    #[test]
-    fn test_apply_stroke() {
-        let mut buf = setup_buffer("do");
-        let result = apply_stroke(&mut buf);
-        assert!(result.applied);
-        assert!(buf.get(0).unwrap().stroke);
-    }
-
-    #[test]
-    fn test_apply_stroke_anywhere() {
-        // "dod" should stroke the first 'd'
-        let mut buf = setup_buffer("dod");
-        let result = apply_stroke(&mut buf);
-        assert!(result.applied);
-        assert!(buf.get(0).unwrap().stroke); // First d is stroked
-    }
-
-    #[test]
-    fn test_apply_mark() {
-        let mut buf = setup_buffer("an");
-        let result = apply_mark(&mut buf, mark::SAC, true);
-        assert!(result.applied);
-        assert_eq!(buf.get(0).unwrap().mark, mark::SAC);
-    }
-
-    #[test]
-    fn test_uo_compound() {
-        let mut buf = setup_buffer("duoc");
-        let result = apply_tone(&mut buf, keys::W, tone::HORN, 0);
-        assert!(result.applied);
-        // Both u and o should have horn
-        assert_eq!(buf.get(1).unwrap().tone, tone::HORN); // u
-        assert_eq!(buf.get(2).unwrap().tone, tone::HORN); // o
-    }
-}
+#[path = "transform_tests.rs"]
+mod tests;
