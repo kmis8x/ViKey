@@ -58,24 +58,32 @@ void TextSender::SendText(const std::wstring& text, int backspaces) {
 }
 
 void TextSender::SendTextFast(const std::wstring& text, int backspaces) {
-    // Use keybd_event for backspaces (better compatibility with remote desktop)
-    for (int i = 0; i < backspaces; i++) {
-        keybd_event(VK_BACK, 0x0E, 0, INJECTED_KEY_MARKER);
-        Sleep(5);
-        keybd_event(VK_BACK, 0x0E, KEYEVENTF_KEYUP_FLAG, INJECTED_KEY_MARKER);
-        Sleep(5);
-    }
-
-    // Delay between backspaces and text
-    if (backspaces > 0) {
-        Sleep(10);
-    }
-
-    // Batch all Unicode characters into a single SendInput call for lower latency
-    // Each character needs 2 INPUT events (key down + key up)
+    // Combine backspaces + Unicode chars into a SINGLE SendInput call.
+    // This is atomic: no gaps between events, preventing race conditions
+    // where the hook callback re-enters during Sleep() pauses.
     std::vector<INPUT> inputs;
-    inputs.reserve(text.length() * 2);
+    inputs.reserve(backspaces * 2 + text.length() * 2);
 
+    // Backspace down/up pairs
+    for (int i = 0; i < backspaces; i++) {
+        INPUT down = {};
+        down.type = INPUT_KEYBOARD;
+        down.ki.wVk = VK_BACK;
+        down.ki.wScan = 0x0E;
+        down.ki.dwFlags = 0;
+        down.ki.dwExtraInfo = INJECTED_KEY_MARKER;
+        inputs.push_back(down);
+
+        INPUT up = {};
+        up.type = INPUT_KEYBOARD;
+        up.ki.wVk = VK_BACK;
+        up.ki.wScan = 0x0E;
+        up.ki.dwFlags = KEYEVENTF_KEYUP_FLAG;
+        up.ki.dwExtraInfo = INJECTED_KEY_MARKER;
+        inputs.push_back(up);
+    }
+
+    // Unicode char down/up pairs
     for (wchar_t c : text) {
         if (c >= 0xD800 && c <= 0xDBFF) continue;
 
@@ -140,17 +148,33 @@ void TextSender::SendTextSlow(const std::wstring& text, int backspaces) {
 
 // Clipboard mode: use clipboard + Ctrl+V for stubborn apps (Feature 4)
 void TextSender::SendTextClipboard(const std::wstring& text, int backspaces) {
-    // Step 1: Send backspaces
-    for (int i = 0; i < backspaces; i++) {
-        keybd_event(VK_BACK, 0x0E, 0, INJECTED_KEY_MARKER);
-        Sleep(10);
-        keybd_event(VK_BACK, 0x0E, KEYEVENTF_KEYUP_FLAG, INJECTED_KEY_MARKER);
-        Sleep(10);
+    // Step 1: Send backspaces as a single batch SendInput
+    if (backspaces > 0) {
+        std::vector<INPUT> bsInputs;
+        bsInputs.reserve(backspaces * 2);
+        for (int i = 0; i < backspaces; i++) {
+            INPUT down = {};
+            down.type = INPUT_KEYBOARD;
+            down.ki.wVk = VK_BACK;
+            down.ki.wScan = 0x0E;
+            down.ki.dwFlags = 0;
+            down.ki.dwExtraInfo = INJECTED_KEY_MARKER;
+            bsInputs.push_back(down);
+
+            INPUT up = {};
+            up.type = INPUT_KEYBOARD;
+            up.ki.wVk = VK_BACK;
+            up.ki.wScan = 0x0E;
+            up.ki.dwFlags = KEYEVENTF_KEYUP_FLAG;
+            up.ki.dwExtraInfo = INJECTED_KEY_MARKER;
+            bsInputs.push_back(up);
+        }
+        SendInput(static_cast<UINT>(bsInputs.size()), bsInputs.data(), sizeof(INPUT));
     }
 
     if (text.empty()) return;
 
-    // Delay between backspaces and text
+    // Delay between backspaces and clipboard paste
     if (backspaces > 0) {
         Sleep(20);
     }
@@ -205,7 +229,7 @@ void TextSender::SendTextClipboard(const std::wstring& text, int backspaces) {
 
     // Step 4: Restore previous clipboard content
     if (hSaved) {
-        Sleep(50);
+        Sleep(100);
         if (OpenClipboard(nullptr)) {
             EmptyClipboard();
             if (!SetClipboardData(CF_UNICODETEXT, hSaved)) {

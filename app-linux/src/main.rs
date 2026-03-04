@@ -22,6 +22,7 @@ pub use vikey_core::{
     ime_clear, ime_clear_all,
     ime_auto_capitalize, ime_free_tone, ime_skip_w_shortcut,
     ime_bracket_shortcut, ime_allow_foreign_consonants,
+    ime_shortcuts_enabled,
     ime_add_shortcut, ime_remove_shortcut, ime_clear_shortcuts,
 };
 
@@ -33,12 +34,11 @@ extern "C" {
     fn ibus_bus_is_connected(bus: *mut std::ffi::c_void) -> i32;
     fn ibus_bus_request_name(bus: *mut std::ffi::c_void, name: *const c_char, flags: u32) -> u32;
     fn ibus_main();
-    fn ibus_quit();
 }
 
 /// Main entry point for IBus engine
 fn main() {
-    println!("ViKey IBus Engine v1.3.1 starting...");
+    eprintln!("ViKey IBus Engine v1.3.6 starting...");
 
     // Initialize vikey_core
     unsafe {
@@ -48,14 +48,6 @@ fn main() {
     // Load and apply settings from config file
     let settings = Settings::load();
     settings.apply();
-
-    println!("  Method: {}", if settings.method == 0 { "Telex" } else { "VNI" });
-    println!("  Modern tone: {}", settings.modern_tone);
-    println!("  ESC restore: {}", settings.esc_restore);
-    println!("  English auto-restore: {}", settings.english_auto_restore);
-    println!("  Foreign consonants: {}", settings.allow_foreign_consonants);
-    println!("  Shortcuts: {} loaded", settings.shortcuts.len());
-    println!("  Config: {:?}", Settings::config_path());
 
     // Initialize IBus
     unsafe {
@@ -80,9 +72,7 @@ fn main() {
             std::process::exit(1);
         }
 
-        println!("ViKey IBus engine started successfully!");
-        println!("Engine name: vikey");
-        println!("Language: Vietnamese (vi)");
+        eprintln!("ViKey IBus engine ready");
 
         // Run IBus main loop
         ibus_main();
@@ -115,7 +105,7 @@ pub extern "C" fn vikey_process_key(keycode: u32, keyval: u32, modifiers: u32) -
         return std::ptr::null_mut();
     }
 
-    // Call vikey_core
+    // Call vikey_core — `caps != shift` is XOR: uppercase when CapsLock OR Shift, not both
     let result = unsafe { ime_key_ext(mac_key, caps != shift, ctrl, shift) };
 
     if result.is_null() {

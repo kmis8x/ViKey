@@ -262,7 +262,14 @@ pub fn on_key_ext(e: &mut Engine, key: u16, caps: bool, ctrl: bool, shift: bool)
             }
         }
 
-        let restore_result = auto_restore::try_auto_restore_on_break(e);
+        // Pass break_char so it's appended to restored output (the key is consumed)
+        // For Enter: pass None (newline handled by platform)
+        let break_char = if key == keys::RETURN || key == keys::ENTER {
+            None
+        } else {
+            break_key_to_char(key, shift)
+        };
+        let restore_result = auto_restore::try_auto_restore_on_break(e, break_char);
         e.clear();
         e.word_history.clear();
         e.spaces_after_commit = 0;
@@ -557,12 +564,14 @@ pub(super) fn try_word_boundary_shortcut_with_char(e: &mut Engine, _trigger_char
     let input_method = e.current_input_method();
 
     // Check for word boundary shortcut match
-    // For SPACE: append to output so it's sent with the replacement text
-    // For punctuation: pass None - let platform type it normally
-    let key_char = if _trigger_char == ' ' {
-        Some(' ')
-    } else {
+    // For SPACE: append space to output
+    // For ENTER: pass None (newline handled by platform)
+    // For punctuation: append trigger char so it's included in replacement text
+    //   (the key is consumed by the caller, so we must include it ourselves)
+    let key_char = if _trigger_char == '\n' {
         None
+    } else {
+        Some(_trigger_char)
     };
     if let Some(m) =
         e.shortcuts

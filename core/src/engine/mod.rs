@@ -774,8 +774,8 @@ impl Engine {
         auto_restore::try_auto_restore_on_space(self)
     }
 
-    fn try_auto_restore_on_break(&self) -> Result {
-        auto_restore::try_auto_restore_on_break(self)
+    fn try_auto_restore_on_break(&self, break_char: Option<char>) -> Result {
+        auto_restore::try_auto_restore_on_break(self, break_char)
     }
 
     fn restore_to_raw(&self) -> Result {

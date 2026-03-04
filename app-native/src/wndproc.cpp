@@ -19,6 +19,9 @@
 #include "app_detector.h"
 #include "updater.h"
 
+// Tray icon message ID (must match main.cpp and tray_icon.cpp)
+constexpr UINT WM_TRAYICON_MSG = WM_USER + 1;
+
 // Globals defined in main.cpp
 extern HINSTANCE g_hInstance;
 extern HWND g_hWnd;

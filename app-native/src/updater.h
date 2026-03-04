@@ -9,8 +9,8 @@
 #include <functional>
 
 // Current version - update this when releasing new versions
-constexpr const wchar_t* VIKEY_VERSION = L"1.3.5";
-constexpr const char* VIKEY_VERSION_A = "1.3.5";
+constexpr const wchar_t* VIKEY_VERSION = L"1.3.6";
+constexpr const char* VIKEY_VERSION_A = "1.3.6";
 
 // GitHub API endpoint for releases
 constexpr const wchar_t* GITHUB_API_HOST = L"api.github.com";

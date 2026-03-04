@@ -3,7 +3,7 @@
     <name>vn.vikey.ibus.ViKey</name>
     <description>ViKey Vietnamese Input Method</description>
     <exec>/usr/lib/ibus/ibus-engine-vikey</exec>
-    <version>1.0.0</version>
+    <version>1.3.6</version>
     <author>Tran Cong Sinh &lt;tcsinh89@gmail.com&gt;</author>
     <license>BSD-3-Clause</license>
     <homepage>https://github.com/kmis8x/ViKey</homepage>

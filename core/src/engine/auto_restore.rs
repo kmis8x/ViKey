@@ -1645,8 +1645,13 @@ pub(super) fn try_auto_restore_on_space(e: &Engine) -> Result {
 }
 
 /// Auto-restore invalid Vietnamese to raw English on break key
-pub(super) fn try_auto_restore_on_break(e: &Engine) -> Result {
-    if let Some(raw_chars) = should_auto_restore(e, true) {
+/// `break_char`: if Some, append the break character to the restored output
+/// (the caller consumed the key, so we must include it in the replacement text)
+pub(super) fn try_auto_restore_on_break(e: &Engine, break_char: Option<char>) -> Result {
+    if let Some(mut raw_chars) = should_auto_restore(e, true) {
+        if let Some(ch) = break_char {
+            raw_chars.push(ch);
+        }
         let backspace = e.buf.len() as u8;
         Result::send(backspace, &raw_chars)
     } else {
