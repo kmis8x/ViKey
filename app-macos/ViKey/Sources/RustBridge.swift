@@ -18,7 +18,6 @@ struct ImeProcessResult {
 enum ImeAction: UInt8 {
     case none = 0
     case send = 1
-    case restore = 2
 }
 
 /// Input method types

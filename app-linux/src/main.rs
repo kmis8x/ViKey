@@ -38,7 +38,7 @@ extern "C" {
 
 /// Main entry point for IBus engine
 fn main() {
-    eprintln!("ViKey IBus Engine v1.3.6 starting...");
+    eprintln!("ViKey IBus Engine v1.3.7 starting...");
 
     // Initialize vikey_core
     unsafe {

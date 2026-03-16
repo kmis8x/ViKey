@@ -109,6 +109,7 @@ public:
     void SetAllowForeignConsonants(bool enabled);
 
     // Shortcut management
+    void SetShortcutsEnabled(bool enabled);
     void AddShortcut(const wchar_t* trigger, const wchar_t* replacement);
     void RemoveShortcut(const wchar_t* trigger);
     void ClearShortcuts();
@@ -140,6 +141,7 @@ private:
     using FnEscRestore = void(*)(bool);
     using FnFreeTone = void(*)(bool);
     using FnAllowForeignConsonants = void(*)(bool);
+    using FnShortcutsEnabled = void(*)(bool);
     using FnAddShortcut = void(*)(const char*, const char*);
     using FnRemoveShortcut = void(*)(const char*);
     using FnClearShortcuts = void(*)();
@@ -164,6 +166,7 @@ private:
     FnEscRestore m_ime_esc_restore;
     FnFreeTone m_ime_free_tone;
     FnAllowForeignConsonants m_ime_allow_foreign_consonants;
+    FnShortcutsEnabled m_ime_shortcuts_enabled;
     FnAddShortcut m_ime_add_shortcut;
     FnRemoveShortcut m_ime_remove_shortcut;
     FnClearShortcuts m_ime_clear_shortcuts;

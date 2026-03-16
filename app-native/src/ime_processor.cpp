@@ -87,6 +87,8 @@ void ImeProcessor::ApplySettings() {
     // Sync excluded apps to AppDetector
     AppDetector::Instance().SetExcludedApps(settings.excludedApps);
 
+    // Sync shortcuts enabled state to Rust engine
+    bridge.SetShortcutsEnabled(settings.shortcutsEnabled);
     UpdateShortcuts();
 }
 
@@ -147,10 +149,9 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
     // Check for app changes (smart switch)
     CheckAppChange();
 
-    if (!m_enabled) {
-        event.handled = false;
-        return;
-    }
+    // Issue #129: Don't return early when disabled - let keys reach Rust engine
+    // for shortcut processing. The engine skips Vietnamese transforms when disabled
+    // but still processes shortcuts (word-boundary and immediate).
 
     int vk = event.vkCode;
 

@@ -13,8 +13,8 @@ IDI_ICON_EN ICON "E.ico"
 
 // Version Info
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,3,4,0
-PRODUCTVERSION 1,3,4,0
+FILEVERSION 1,3,7,0
+PRODUCTVERSION 1,3,7,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -27,12 +27,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ViKey"
             VALUE "FileDescription", "ViKey - Nhẹ, nhanh, chuẩn Việt"
-            VALUE "FileVersion", "1.3.6"
+            VALUE "FileVersion", "1.3.7"
             VALUE "InternalName", "ViKey"
             VALUE "LegalCopyright", "Copyright (C) 2026"
             VALUE "OriginalFilename", "ViKey.exe"
             VALUE "ProductName", "ViKey"
-            VALUE "ProductVersion", "1.3.6"
+            VALUE "ProductVersion", "1.3.7"
         END
     END
     BLOCK "VarFileInfo"

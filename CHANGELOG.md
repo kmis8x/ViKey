@@ -2,6 +2,17 @@
 
 Các thay đổi đáng chú ý của dự án.
 
+## [1.3.7] - 2026-03-16
+
+### Sửa lỗi
+- **Gõ tắt hoạt động mọi chế độ**: Gõ tắt giờ hoạt động cả khi tắt tiếng Việt (chế độ English)
+- **Đồng bộ cài đặt gõ tắt**: Tuỳ chọn bật/tắt gõ tắt giờ được đồng bộ đúng với engine Rust
+
+### Cải tiến
+- **macOS**: Trích xuất hằng số keycode, cải thiện comment
+- **Linux**: Loại bỏ hàm keysym_to_mac không sử dụng
+- **macOS**: Loại bỏ ImeAction.restore không sử dụng
+
 ## [1.3.4] - 2026-02-03
 
 ### Thêm mới

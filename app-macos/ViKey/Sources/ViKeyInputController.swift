@@ -10,6 +10,10 @@ import AppKit
 
 class ViKeyInputController: IMKInputController {
 
+    // MARK: - Constants
+
+    private let kSpaceKeyCode: UInt16 = 49
+
     // MARK: - Properties
 
     private let bridge = RustBridge.shared
@@ -38,12 +42,12 @@ class ViKeyInputController: IMKInputController {
         guard let client = sender as? IMKTextInput else { return false }
 
         // Check for toggle hotkey (Ctrl+Space by default)
-        if event.modifierFlags.contains(.control) && event.keyCode == 49 { // Space
+        if event.modifierFlags.contains(.control) && event.keyCode == kSpaceKeyCode {
             toggleEnabled()
             return true
         }
 
-        // Skip if modifier keys (except shift) are pressed
+        // Skip if any modifier (Cmd/Opt/Ctrl) is held — only Shift is allowed for typing
         let modifiers = event.modifierFlags.intersection([.command, .option, .control])
         if !modifiers.isEmpty {
             return false
