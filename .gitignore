@@ -23,3 +23,19 @@ Thumbs.db
 # macOS build artifacts
 app-macos/build/
 app-macos/ViKey/lib/
+
+# Untracked build artifacts
+*.exe
+*.dll
+*.ico
+*.zip
+nul
+
+# Plans (local only)
+plans/
+
+# Scripts (local only)
+scripts/
+
+# Assets (local only)
+assets/
