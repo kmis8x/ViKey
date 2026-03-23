@@ -183,8 +183,10 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
     ImeResult result = RustBridge::Instance().ProcessKeyExt(macKeycode, caps, false, event.shift);
 
     if (result.action == ImeAction::Send) {
-        if (result.count > 0) {
-            // Send replacement text
+        if (result.count > 0 || result.backspace > 0) {
+            // Send replacement text (and/or backspaces)
+            // When count==0 but backspace>0: engine wants to delete chars without
+            // sending new text (e.g., backspace-after-space deleting a space char)
             std::wstring text = result.GetText();
             // For shortcut expansion: use clipboard mode for reliability
             // - backspaces > 4: indicates shortcut expansion (e.g., "vn " -> "Việt Nam ")
@@ -196,7 +198,8 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
             }
         }
         // Block the key: Send action means the engine consumed it
-        // (count==0 means key absorbed with no output, e.g., redundant 'w' in ươ compound)
+        // (count==0 && backspace==0 means key absorbed with no visible effect,
+        // e.g., redundant 'w' in ươ compound)
         event.handled = true;
     } else if (result.IsKeyConsumed()) {
         // Key consumed but no text to send

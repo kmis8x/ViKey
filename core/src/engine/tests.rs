@@ -1,5 +1,5 @@
 use super::Engine;
-use crate::utils::{telex, type_word, vni};
+use crate::utils::{telex, telex_auto_restore, type_word, vni};
 
 const TELEX_BASIC: &[(&str, &str)] = &[
     ("as", "á"),
@@ -400,4 +400,26 @@ fn test_circumflex_revert_reset_on_backspace() {
             input, result, expected
         );
     }
+}
+
+/// Auto-restore: mid-word restore when mark+consonant creates English pattern
+/// "esxtension" → 'es'=é, 'x' replaces to ẽ, 't' triggers mid-word restore → "esxt..."
+const TELEX_AUTO_RESTORE_MIDWORD: &[(&str, &str)] = &[
+    ("esxtension ", "esxtension "), // 'es'→é, 'x'→ẽ, 't' restores → "esxt..."
+    ("extension ", "extension "),   // 'ex'→ẽ, 't' restores → "ext..."
+];
+
+#[test]
+fn test_auto_restore_midword_english() {
+    telex_auto_restore(TELEX_AUTO_RESTORE_MIDWORD);
+}
+
+/// Auto-restore after typing Vietnamese word first
+#[test]
+fn test_auto_restore_midword_after_vn() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "vieejt esxtension ");
+    assert_eq!(result, "việt esxtension ",
+        "[after vn] got '{}'", result);
 }

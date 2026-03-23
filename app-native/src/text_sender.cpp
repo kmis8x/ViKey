@@ -227,17 +227,33 @@ void TextSender::SendTextClipboard(const std::wstring& text, int backspaces) {
     Sleep(5);
     keybd_event(VK_CONTROL, 0x1D, KEYEVENTF_KEYUP_FLAG, INJECTED_KEY_MARKER);
 
-    // Step 4: Restore previous clipboard content
-    if (hSaved) {
-        Sleep(100);
+    // Step 4: Restore previous clipboard content (or clear ViKey's text)
+    // Wait for Ctrl+V to be fully processed by the target application
+    Sleep(150);
+
+    // Retry OpenClipboard up to 3 times (another app may hold the clipboard briefly)
+    bool clipboardOpened = false;
+    for (int attempt = 0; attempt < 3; attempt++) {
         if (OpenClipboard(nullptr)) {
-            EmptyClipboard();
-            if (!SetClipboardData(CF_UNICODETEXT, hSaved)) {
-                GlobalFree(hSaved);  // Free on failure (ownership stays with caller)
-            }
-            CloseClipboard();
-        } else {
-            GlobalFree(hSaved);
+            clipboardOpened = true;
+            break;
         }
+        Sleep(50);
+    }
+
+    if (clipboardOpened) {
+        EmptyClipboard();
+        if (hSaved) {
+            // Restore the user's previous clipboard content
+            if (!SetClipboardData(CF_UNICODETEXT, hSaved)) {
+                GlobalFree(hSaved);
+            }
+            hSaved = nullptr; // Ownership transferred to clipboard or freed
+        }
+        // If hSaved was null (clipboard was empty), EmptyClipboard already
+        // cleared ViKey's text — user won't accidentally paste it later
+        CloseClipboard();
+    } else if (hSaved) {
+        GlobalFree(hSaved);
     }
 }
