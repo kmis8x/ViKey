@@ -181,24 +181,9 @@ impl ShortcutTable {
         }
     }
 
-    /// Create with default Vietnamese shortcuts (common abbreviations)
-    ///
-    /// Note: "w" → "ư" is NOT a shortcut, it's handled by the engine
-    /// as a vowel key with Vietnamese validation.
-    ///
-    /// Currently disabled - returns empty table
+    /// Create with default shortcuts (empty — users add their own)
     pub fn with_defaults() -> Self {
-        // Temporarily disabled default shortcuts
         Self::new()
-
-        // Original defaults (uncomment to re-enable):
-        // let mut table = Self::new();
-        // table.add(Shortcut::new("vn", "Việt Nam"));
-        // table.add(Shortcut::new("hcm", "Hồ Chí Minh"));
-        // table.add(Shortcut::new("hn", "Hà Nội"));
-        // table.add(Shortcut::new("dc", "được"));
-        // table.add(Shortcut::new("ko", "không"));
-        // table
     }
 
     /// Create with Telex defaults only

@@ -210,9 +210,6 @@ bool Settings::ImportFromJson(const std::wstring& json) {
     }
 
     shortcuts = ParseShortcutsJsonArray(json, L"shortcuts");
-    if (shortcuts.empty()) {
-        shortcuts = DefaultShortcuts();
-    }
 
     return true;
 }

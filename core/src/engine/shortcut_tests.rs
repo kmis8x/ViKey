@@ -237,10 +237,10 @@ fn test_all_input_method_shortcut() {
 fn test_with_defaults_has_common_shortcuts() {
     let table = ShortcutTable::with_defaults();
 
-    // Default shortcuts are currently disabled - table should be empty
+    // Default shortcuts are empty — users add their own
     assert!(table.is_empty());
 
-    // "vn" → "Việt Nam" should NOT exist (disabled)
+    // No preset shortcuts
     let result = table.lookup_for_method("vn", InputMethod::All);
     assert!(result.is_none());
 

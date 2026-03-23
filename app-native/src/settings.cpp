@@ -124,28 +124,8 @@ void Settings::Save() {
 }
 
 std::vector<TextShortcut> Settings::DefaultShortcuts() {
-    return {
-        {L"vn", L"Vi\u1EC7t Nam"},
-        {L"hn", L"H\u00E0 N\u1ED9i"},
-        {L"tphcm", L"Th\u00E0nh ph\u1ED1 H\u1ED3 Ch\u00ED Minh"},
-        {L"sg", L"S\u00E0i G\u00F2n"},
-        {L"ko", L"kh\u00F4ng"},
-        {L"dc", L"\u0111\u01B0\u1EE3c"},
-        {L"nc", L"n\u01B0\u1EDBc"},
-        {L"bn", L"b\u1EA1n"},
-        {L"mk", L"m\u00ECnh"},
-        {L"ns", L"n\u00F3i"},
-        {L"vs", L"v\u1EDBi"},
-        {L"ntn", L"nh\u01B0 th\u1EBF n\u00E0o"},
-        {L"j", L"g\u00EC"},
-        {L"cx", L"c\u0169ng"},
-        {L"ng", L"ng\u01B0\u1EDDi"},
-        {L"ck", L"ch\u1ED3ng"},
-        {L"vk", L"v\u1EE3"},
-        {L"bt", L"b\u00ECnh th\u01B0\u1EDDng"},
-        {L"nt", L"nh\u1EAFn tin"},
-        {L"ctv", L"c\u1ED9ng t\u00E1c vi\u00EAn"},
-    };
+    // Empty by default — users add their own shortcuts
+    return {};
 }
 
 std::wstring Settings::GetString(const wchar_t* name, const wchar_t* defaultValue) {
@@ -215,7 +195,7 @@ void Settings::SetAutoStart(bool enabled) {
 void Settings::LoadShortcuts() {
     std::wstring json = GetString(L"TextShortcuts", L"");
     if (json.empty()) {
-        shortcuts = DefaultShortcuts();
+        shortcuts.clear();
         return;
     }
 
@@ -237,10 +217,6 @@ void Settings::LoadShortcuts() {
         }
 
         pos = semicolon + 1;
-    }
-
-    if (shortcuts.empty()) {
-        shortcuts = DefaultShortcuts();
     }
 }
 
