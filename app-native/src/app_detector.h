@@ -10,8 +10,8 @@
 
 // Per-app state storage
 struct AppState {
-    bool enabled;
-    int encoding;  // For Feature 8: App Encoding Memory
+    bool enabled = false;
+    int encoding = 0;  // For Feature 8: App Encoding Memory
 };
 
 class AppDetector {
@@ -31,7 +31,7 @@ public:
 
     // Exclusion list (Feature 3)
     void SetExcludedApps(const std::vector<std::wstring>& apps);
-    bool IsCurrentAppExcluded();
+    bool IsAppExcluded(const std::wstring& appName);
     const std::vector<std::wstring>& GetExcludedApps() const { return m_excludedApps; }
 
     // App Encoding Memory (Feature 8)

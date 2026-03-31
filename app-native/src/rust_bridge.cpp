@@ -2,7 +2,6 @@
 // rust_bridge.cpp
 // Project: ViKey | Author: Trần Công Sinh | https://github.com/kmis8x/ViKey
 
-#define _CRT_SECURE_NO_WARNINGS
 #include "rust_bridge.h"
 #include <codecvt>
 #include <locale>
@@ -78,17 +77,13 @@ RustBridge::~RustBridge() {
 bool RustBridge::Initialize() {
     if (m_loaded) return true;
 
-    // Load the Rust core DLL
-    m_hModule = LoadLibraryW(L"core.dll");
-    if (!m_hModule) {
-        // Try loading from same directory as exe
-        wchar_t path[MAX_PATH];
-        GetModuleFileNameW(nullptr, path, MAX_PATH);
-        wchar_t* lastSlash = wcsrchr(path, L'\\');
-        if (lastSlash) {
-            wcscpy(lastSlash + 1, L"core.dll");
-            m_hModule = LoadLibraryW(path);
-        }
+    // Load the Rust core DLL using full path (prevent DLL hijacking)
+    wchar_t path[MAX_PATH];
+    GetModuleFileNameW(nullptr, path, MAX_PATH);
+    wchar_t* lastSlash = wcsrchr(path, L'\\');
+    if (lastSlash) {
+        wcscpy_s(lastSlash + 1, MAX_PATH - (lastSlash + 1 - path), L"core.dll");
+        m_hModule = LoadLibraryW(path);
     }
 
     if (!m_hModule) {

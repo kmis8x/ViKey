@@ -15,15 +15,6 @@ constexpr int WM_KEYDOWN_MSG = 0x0100;
 constexpr int WM_SYSKEYDOWN_MSG = 0x0104;
 constexpr DWORD LLKHF_INJECTED_FLAG = 0x10;
 
-// KBDLLHOOKSTRUCT structure
-struct KBDLLHOOKSTRUCT_DATA {
-    DWORD vkCode;
-    DWORD scanCode;
-    DWORD flags;
-    DWORD time;
-    ULONG_PTR dwExtraInfo;
-};
-
 // Static instance pointer for callback
 static KeyboardHook* g_instance = nullptr;
 
@@ -90,7 +81,7 @@ LRESULT KeyboardHook::ProcessKey(int nCode, WPARAM wParam, LPARAM lParam) {
 
     // Only process key down events
     if (nCode >= 0 && (wParam == WM_KEYDOWN_MSG || wParam == WM_SYSKEYDOWN_MSG)) {
-        auto* hookStruct = reinterpret_cast<KBDLLHOOKSTRUCT_DATA*>(lParam);
+        auto* hookStruct = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 
         // Skip ONLY our own injected keys (identified by our marker)
         // Don't skip other injected keys - they may come from remote desktop/AnyDesk

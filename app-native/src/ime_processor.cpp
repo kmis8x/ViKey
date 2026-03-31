@@ -109,6 +109,11 @@ void ImeProcessor::UpdateShortcuts() {
 }
 
 void ImeProcessor::CheckAppChange() {
+    // Fast path: skip expensive syscalls if foreground window hasn't changed
+    HWND currentHwnd = GetForegroundWindow();
+    if (currentHwnd == m_lastHwnd) return;  // Same window, skip
+    m_lastHwnd = currentHwnd;
+
     Settings& settings = Settings::Instance();
 
     AppDetector& detector = AppDetector::Instance();
@@ -125,7 +130,7 @@ void ImeProcessor::CheckAppChange() {
         m_lastAppName = currentApp;
 
         // Check if new app is in exclusion list (Feature 3)
-        if (detector.IsCurrentAppExcluded()) {
+        if (detector.IsAppExcluded(currentApp)) {
             if (m_enabled.load()) {
                 m_enabled.store(false);
                 RustBridge::Instance().SetEnabled(false);

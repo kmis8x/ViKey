@@ -100,16 +100,17 @@ void AppDetector::ClearAppState(const std::wstring& app) {
 
 void AppDetector::SetExcludedApps(const std::vector<std::wstring>& apps) {
     m_excludedApps = apps;
+    // Pre-lowercase excluded apps so IsAppExcluded() doesn't do it per-call
+    for (auto& app : m_excludedApps) {
+        std::transform(app.begin(), app.end(), app.begin(), ::towlower);
+    }
 }
 
-bool AppDetector::IsCurrentAppExcluded() {
-    std::wstring currentApp = GetForegroundAppName();
-    if (currentApp.empty()) return false;
+bool AppDetector::IsAppExcluded(const std::wstring& appName) {
+    if (appName.empty()) return false;
 
     for (const auto& excluded : m_excludedApps) {
-        std::wstring lowerExcluded = excluded;
-        std::transform(lowerExcluded.begin(), lowerExcluded.end(), lowerExcluded.begin(), ::towlower);
-        if (currentApp == lowerExcluded) {
+        if (appName == excluded) {
             return true;
         }
     }

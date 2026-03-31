@@ -198,7 +198,8 @@ std::wstring EncodingConverter::UnicodeToComposite(const std::wstring& text) {
     if (len <= 0) return text;
 
     std::wstring result(len, L'\0');
-    NormalizeString(NormalizationD, text.c_str(), -1, &result[0], len);
+    int actualLen = NormalizeString(NormalizationD, text.c_str(), -1, &result[0], len);
+    if (actualLen <= 0) return text;
 
     // Remove trailing null
     while (!result.empty() && result.back() == L'\0') {
@@ -214,7 +215,8 @@ std::wstring EncodingConverter::CompositeToUnicode(const std::wstring& text) {
     if (len <= 0) return text;
 
     std::wstring result(len, L'\0');
-    NormalizeString(NormalizationC, text.c_str(), -1, &result[0], len);
+    int actualLen = NormalizeString(NormalizationC, text.c_str(), -1, &result[0], len);
+    if (actualLen <= 0) return text;
 
     // Remove trailing null
     while (!result.empty() && result.back() == L'\0') {

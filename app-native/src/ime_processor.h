@@ -54,7 +54,12 @@ private:
     void CheckAppChange();
 
     std::atomic<bool> m_enabled;
-    std::wstring m_lastAppName;  // Track last app for smart switch
+    // Thread safety: m_lastAppName is only accessed from the UI/hook thread.
+    // WH_KEYBOARD_LL callbacks run on the thread that called SetWindowsHookEx
+    // (the UI thread), so no concurrent access occurs. Do NOT access from
+    // background threads without adding synchronization.
+    std::wstring m_lastAppName;
+    HWND m_lastHwnd = nullptr;
     std::atomic<uint8_t> m_method;
     bool m_initialized;
 };

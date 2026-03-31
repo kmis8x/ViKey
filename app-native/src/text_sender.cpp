@@ -52,7 +52,7 @@ void TextSender::SendText(const std::wstring& text, int backspaces) {
     }
 
     if (m_clipboardMode) {
-        SendTextClipboard(outputText, backspaces);
+        SendTextClipboardDeferred(outputText, backspaces);  // Deferred, safe in hook context
     } else if (m_slowMode) {
         SendTextSlow(outputText, backspaces);
     } else {
@@ -108,7 +108,9 @@ void TextSender::SendTextFast(const std::wstring& text, int backspaces) {
     }
 
     if (!inputs.empty()) {
-        SendInput(static_cast<UINT>(inputs.size()), inputs.data(), sizeof(INPUT));
+        UINT sent = SendInput(static_cast<UINT>(inputs.size()), inputs.data(), sizeof(INPUT));
+        // SendInput returns number of events inserted; 0 on failure (best-effort, no action needed)
+        (void)sent;
     }
 }
 

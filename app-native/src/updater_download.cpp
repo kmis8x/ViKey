@@ -43,16 +43,27 @@ bool Updater::DownloadAndInstall(const std::wstring& version, HWND hWnd) {
         exeDir = exeDir.substr(0, lastSlash);
     }
 
+    // Escape single quotes for PowerShell string embedding
+    auto escapePS = [](const std::wstring& s) -> std::wstring {
+        std::wstring result = s;
+        size_t pos = 0;
+        while ((pos = result.find(L'\'', pos)) != std::wstring::npos) {
+            result.replace(pos, 1, L"''");
+            pos += 2;
+        }
+        return result;
+    };
+
     // Create PowerShell update script with error handling
     std::wstring scriptPath = std::wstring(tempPath) + L"vikey-update.ps1";
     std::wstring script =
         L"# ViKey Auto-Update Script\n"
         L"$ErrorActionPreference = 'Stop'\n"
-        L"$zipUrl = '" + downloadUrl + L"'\n"
-        L"$zipPath = '" + zipPath + L"'\n"
-        L"$extractPath = '" + extractPath + L"'\n"
-        L"$installPath = '" + exeDir + L"'\n"
-        L"$exePath = '" + std::wstring(exePath) + L"'\n"
+        L"$zipUrl = '" + escapePS(downloadUrl) + L"'\n"
+        L"$zipPath = '" + escapePS(zipPath) + L"'\n"
+        L"$extractPath = '" + escapePS(extractPath) + L"'\n"
+        L"$installPath = '" + escapePS(exeDir) + L"'\n"
+        L"$exePath = '" + escapePS(std::wstring(exePath)) + L"'\n"
         L"\n"
         L"try {\n"
         L"    # Download update\n"

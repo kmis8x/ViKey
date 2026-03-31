@@ -19,16 +19,8 @@ static HMODULE g_hCoreDll = nullptr;
 static bool LoadVersionFunction() {
     if (g_versionHasUpdate) return true;
 
-    wchar_t exePath[MAX_PATH];
-    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-    std::wstring exeDir(exePath);
-    size_t lastSlash = exeDir.find_last_of(L"\\/");
-    if (lastSlash != std::wstring::npos) {
-        exeDir = exeDir.substr(0, lastSlash);
-    }
-
-    std::wstring dllPath = exeDir + L"\\core.dll";
-    g_hCoreDll = LoadLibraryW(dllPath.c_str());
+    // Use GetModuleHandleW since core.dll is already loaded by RustBridge
+    g_hCoreDll = GetModuleHandleW(L"core.dll");
     if (!g_hCoreDll) return false;
 
     g_versionHasUpdate = (FnVersionHasUpdate)GetProcAddress(g_hCoreDll, "version_has_update");
@@ -139,6 +131,7 @@ std::string Updater::HttpGet(const wchar_t* host, const wchar_t* path) {
     }
 
     if (bResult) {
+        constexpr size_t MAX_RESPONSE_SIZE = 1048576; // 1MB cap
         DWORD dwSize = 0;
         DWORD dwDownloaded = 0;
 
@@ -155,6 +148,8 @@ std::string Updater::HttpGet(const wchar_t* host, const wchar_t* path) {
                 }
 
                 delete[] buffer;
+
+                if (result.size() > MAX_RESPONSE_SIZE) break;
             }
         } while (dwSize > 0);
     }
