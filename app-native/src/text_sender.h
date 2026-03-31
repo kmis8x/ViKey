@@ -7,6 +7,12 @@
 #include <windows.h>
 #include <string>
 
+// Heap-allocated data for deferred clipboard paste
+struct DeferredClipboardData {
+    std::wstring text;
+    int backspaces;
+};
+
 // Output encoding for per-app encoding (Feature 8)
 enum class OutputEncoding {
     Unicode = 0,
@@ -35,6 +41,12 @@ public:
 
     // Clipboard mode: use clipboard + Ctrl+V (for stubborn apps)
     void SendTextClipboard(const std::wstring& text, int backspaces);
+
+    // Post clipboard operation to main window (call from hook thread)
+    void SendTextClipboardDeferred(const std::wstring& text, int backspaces);
+
+    // Execute deferred clipboard operation (call from WndProc)
+    static void ExecuteDeferredClipboard(DeferredClipboardData* data);
 
 private:
     TextSender();

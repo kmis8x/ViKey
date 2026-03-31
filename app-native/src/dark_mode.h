@@ -34,3 +34,6 @@ void ScaleDialogForDpi(HWND hDlg);
 
 // DPI helper - get scaling factor for current monitor
 float GetDpiScale(HWND hWnd);
+
+// Refresh dark mode state (call on WM_SETTINGCHANGE)
+void RefreshDarkMode();

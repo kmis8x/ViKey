@@ -168,3 +168,16 @@ float GetDpiScale(HWND hWnd) {
     }
     return dpi / 96.0f;
 }
+
+void RefreshDarkMode() {
+    bool wasDark = g_isDarkMode;
+    g_isDarkMode = IsSystemDarkMode();
+
+    if (wasDark != g_isDarkMode) {
+        // Clean up old brushes if switching away from dark
+        if (!g_isDarkMode) {
+            if (g_hDarkBrush) { DeleteObject(g_hDarkBrush); g_hDarkBrush = nullptr; }
+            if (g_hDarkEditBrush) { DeleteObject(g_hDarkEditBrush); g_hDarkEditBrush = nullptr; }
+        }
+    }
+}

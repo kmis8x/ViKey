@@ -42,6 +42,9 @@ public:
     // Check if hook is active
     bool IsActive() const { return m_hookId != nullptr; }
 
+    // Re-install hook if it was silently removed by Windows
+    bool EnsureInstalled();
+
     // Set callback for key events
     void SetCallback(KeyPressedCallback callback) { m_callback = callback; }
 

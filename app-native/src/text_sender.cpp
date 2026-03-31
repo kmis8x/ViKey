@@ -6,7 +6,10 @@
 #include "keyboard_hook.h"
 #include "keycodes.h"
 #include "encoding_converter.h"
+#include "resource.h"
 #include <vector>
+
+extern HWND g_hWnd;
 
 // Win32 Constants
 constexpr DWORD INPUT_KEYBOARD_TYPE = 1;
@@ -256,4 +259,19 @@ void TextSender::SendTextClipboard(const std::wstring& text, int backspaces) {
     } else if (hSaved) {
         GlobalFree(hSaved);
     }
+}
+
+void TextSender::SendTextClipboardDeferred(const std::wstring& text, int backspaces) {
+    auto* data = new DeferredClipboardData{text, backspaces};
+    if (!PostMessage(g_hWnd, WM_DEFERRED_CLIPBOARD, 0, (LPARAM)data)) {
+        // PostMessage failed — fallback to synchronous
+        SendTextClipboard(text, backspaces);
+        delete data;
+    }
+}
+
+void TextSender::ExecuteDeferredClipboard(DeferredClipboardData* data) {
+    if (!data) return;
+    TextSender::Instance().SendTextClipboard(data->text, data->backspaces);
+    delete data;
 }

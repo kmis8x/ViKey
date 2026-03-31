@@ -100,10 +100,12 @@
 
 // Timer IDs
 #define TIMER_UPDATE          600
+#define TIMER_HOOK_CHECK      601
 
 // Custom messages
 #define WM_TRAYICON           (WM_USER + 1)
 #define WM_TOGGLE_IME         (WM_USER + 2)
+#define WM_DEFERRED_CLIPBOARD (WM_USER + 3)
 
 // Update Dialog Controls
 #define IDD_UPDATE            305

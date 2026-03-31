@@ -12,6 +12,7 @@
 #include "dark_mode.h"
 #include "dialogs.h"
 #include "ime_processor.h"
+#include "text_sender.h"
 #include "tray_icon.h"
 #include "hotkey.h"
 #include "settings.h"
@@ -122,8 +123,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
 
+    case WM_DEFERRED_CLIPBOARD: {
+        auto* data = reinterpret_cast<DeferredClipboardData*>(lParam);
+        TextSender::ExecuteDeferredClipboard(data);
+        return 0;
+    }
+
+    case WM_SETTINGCHANGE: {
+        if (lParam && wcscmp(reinterpret_cast<LPCWSTR>(lParam), L"ImmersiveColorSet") == 0) {
+            RefreshDarkMode();
+        }
+        return 0;
+    }
+
     case WM_HOTKEY:
         HotkeyManager::Instance().ProcessHotkey(wParam);
+        return 0;
+
+    case WM_TIMER:
+        if (wParam == TIMER_HOOK_CHECK) {
+            KeyboardHook::Instance().EnsureInstalled();
+        }
         return 0;
 
     case WM_DESTROY:

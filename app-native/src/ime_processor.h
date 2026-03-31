@@ -5,6 +5,7 @@
 #pragma once
 
 #include <windows.h>
+#include <atomic>
 #include "rust_bridge.h"
 #include "keyboard_hook.h"
 #include "text_sender.h"
@@ -25,14 +26,14 @@ public:
 
     // Enable/disable IME
     void SetEnabled(bool enabled);
-    bool IsEnabled() const { return m_enabled; }
+    bool IsEnabled() const { return m_enabled.load(); }
 
     // Toggle enabled state
     void ToggleEnabled();
 
     // Set input method
     void SetMethod(InputMethod method);
-    InputMethod GetMethod() const { return m_method; }
+    InputMethod GetMethod() const { return static_cast<InputMethod>(m_method.load()); }
 
     // Apply settings from Settings class
     void ApplySettings();
@@ -52,8 +53,8 @@ private:
     // Check and handle app changes (for smart switch)
     void CheckAppChange();
 
-    bool m_enabled;
+    std::atomic<bool> m_enabled;
     std::wstring m_lastAppName;  // Track last app for smart switch
-    InputMethod m_method;
+    std::atomic<uint8_t> m_method;
     bool m_initialized;
 };

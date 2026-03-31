@@ -12,7 +12,7 @@ ImeProcessor& ImeProcessor::Instance() {
 
 ImeProcessor::ImeProcessor()
     : m_enabled(true)
-    , m_method(InputMethod::Telex)
+    , m_method(static_cast<uint8_t>(InputMethod::Telex))
     , m_initialized(false)
     , m_lastAppName(L"") {
 }
@@ -43,25 +43,25 @@ void ImeProcessor::Stop() {
 }
 
 void ImeProcessor::SetEnabled(bool enabled) {
-    m_enabled = enabled;
+    m_enabled.store(enabled);
     RustBridge::Instance().SetEnabled(enabled);
 }
 
 void ImeProcessor::ToggleEnabled() {
-    SetEnabled(!m_enabled);
+    SetEnabled(!m_enabled.load());
 
     // Save state for current app if smart switch is enabled
     Settings& settings = Settings::Instance();
     if (settings.smartSwitch) {
         std::wstring currentApp = AppDetector::Instance().GetForegroundAppName();
         if (!currentApp.empty()) {
-            AppDetector::Instance().SaveAppState(currentApp, m_enabled);
+            AppDetector::Instance().SaveAppState(currentApp, m_enabled.load());
         }
     }
 }
 
 void ImeProcessor::SetMethod(InputMethod method) {
-    m_method = method;
+    m_method.store(static_cast<uint8_t>(method));
     RustBridge::Instance().SetMethod(method);
 }
 
@@ -119,22 +119,22 @@ void ImeProcessor::CheckAppChange() {
     if (currentApp != m_lastAppName) {
         // App changed - save state for old app, restore state for new app
         if (!m_lastAppName.empty() && settings.smartSwitch) {
-            detector.SaveAppState(m_lastAppName, m_enabled);
+            detector.SaveAppState(m_lastAppName, m_enabled.load());
         }
 
         m_lastAppName = currentApp;
 
         // Check if new app is in exclusion list (Feature 3)
         if (detector.IsCurrentAppExcluded()) {
-            if (m_enabled) {
-                m_enabled = false;
+            if (m_enabled.load()) {
+                m_enabled.store(false);
                 RustBridge::Instance().SetEnabled(false);
             }
         } else if (settings.smartSwitch) {
             // Restore state for new app (Feature 2)
             bool newState = detector.GetAppState(currentApp, settings.enabled);
-            if (newState != m_enabled) {
-                m_enabled = newState;
+            if (newState != m_enabled.load()) {
+                m_enabled.store(newState);
                 RustBridge::Instance().SetEnabled(newState);
             }
         }
@@ -192,7 +192,7 @@ void ImeProcessor::OnKeyPressed(KeyEventData& event) {
             // - backspaces > 4: indicates shortcut expansion (e.g., "vn " -> "Việt Nam ")
             // - text.length() > 15: long replacement text causes timing issues with SendInput
             if (result.backspace > 4 || text.length() > 15) {
-                TextSender::Instance().SendTextClipboard(text, result.backspace);
+                TextSender::Instance().SendTextClipboardDeferred(text, result.backspace);
             } else {
                 TextSender::Instance().SendText(text, result.backspace);
             }

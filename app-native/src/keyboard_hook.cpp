@@ -58,8 +58,8 @@ bool KeyboardHook::Start() {
 
     SetLastError(0);
 
-    // For WH_KEYBOARD_LL, use user32.dll module handle
-    HMODULE hMod = LoadLibraryW(L"user32.dll");
+    // For WH_KEYBOARD_LL, use user32.dll module handle (already loaded in GUI apps — no refcount leak)
+    HMODULE hMod = GetModuleHandleW(L"user32.dll");
 
     m_hookId = SetWindowsHookExW(
         WH_KEYBOARD_LL,
@@ -156,4 +156,10 @@ bool KeyboardHook::IsKeyDown(int vKey) {
 
 bool KeyboardHook::IsCapsLockOn() {
     return (GetKeyState(VK_CAPITAL_KEY) & 0x0001) != 0;
+}
+
+bool KeyboardHook::EnsureInstalled() {
+    if (m_hookId != nullptr) return true;  // Still installed
+    // Hook was removed — re-install
+    return Start();
 }

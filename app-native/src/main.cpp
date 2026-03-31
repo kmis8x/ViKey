@@ -198,6 +198,7 @@ bool InitInstance(HINSTANCE hInstance) {
     });
 
     ImeProcessor::Instance().Start();
+    SetTimer(g_hWnd, TIMER_HOOK_CHECK, 5000, nullptr);
     UpdateUI();
 
     // Show Settings dialog or Toast on startup
@@ -219,6 +220,10 @@ bool InitInstance(HINSTANCE hInstance) {
 }
 
 void CleanupInstance() {
+    if (g_hWnd) {
+        KillTimer(g_hWnd, TIMER_HOOK_CHECK);
+    }
+
     ImeProcessor::Instance().Stop();
 
     if (g_hWnd) {
