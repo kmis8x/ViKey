@@ -117,11 +117,12 @@ pub extern "C" fn vikey_process_key(keycode: u32, keyval: u32, modifiers: u32) -
 
         if r.action == 1 {
             // Send action - convert chars to string
-            let text: String = (0..r.count as usize)
+            let count = (r.count as usize).min(r.chars.len());
+            let text: String = (0..count)
                 .filter_map(|i| char::from_u32(r.chars[i]))
                 .collect();
 
-            let c_text = CString::new(text.clone()).unwrap_or_default();
+            let c_text = CString::new(text).unwrap_or_default();
 
             let out = Box::new(ViKeyResult {
                 handled: 1,
@@ -133,7 +134,19 @@ pub extern "C" fn vikey_process_key(keycode: u32, keyval: u32, modifiers: u32) -
             return Box::into_raw(out);
         }
 
+        // Check key_consumed flag — return handled even without Send action
+        let key_consumed = r.flags & 0x01 != 0;
+
         ime_free(result);
+
+        if key_consumed {
+            let out = Box::new(ViKeyResult {
+                handled: 1,
+                text: std::ptr::null_mut(),
+                backspace: 0,
+            });
+            return Box::into_raw(out);
+        }
     }
 
     std::ptr::null_mut()

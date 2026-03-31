@@ -23,7 +23,7 @@ pub(super) fn parse_json_object(json: &str) -> Option<HashMap<String, String>> {
                 current.push(c);
             }
             '}' | ']' => {
-                depth -= 1;
+                if depth > 0 { depth -= 1; }
                 current.push(c);
             }
             ',' if depth == 0 => {
@@ -93,8 +93,8 @@ pub(super) fn escape_json(s: &str) -> String {
 
 /// Unescape JSON string
 pub(super) fn unescape_json(s: &str) -> String {
-    s.replace("\\\"", "\"")
-        .replace("\\\\", "\\")
+    s.replace("\\\\", "\\")
+        .replace("\\\"", "\"")
         .replace("\\n", "\n")
         .replace("\\r", "\r")
         .replace("\\t", "\t")

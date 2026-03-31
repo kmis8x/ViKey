@@ -5,6 +5,7 @@
 
 use std::fs;
 use std::path::PathBuf;
+use std::os::unix::fs::PermissionsExt;
 
 mod settings_json;
 use settings_json::{parse_json_object, parse_shortcuts_array, escape_json};
@@ -61,14 +62,25 @@ impl Default for Settings {
 
 impl Settings {
     /// Get config directory path (~/.config/vikey/)
-    pub fn config_dir() -> PathBuf {
+    /// Returns None if neither XDG_CONFIG_HOME nor HOME is set.
+    fn config_dir_opt() -> Option<PathBuf> {
         let xdg_config = std::env::var("XDG_CONFIG_HOME")
             .map(PathBuf::from)
-            .unwrap_or_else(|_| {
-                let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-                PathBuf::from(home).join(".config")
-            });
-        xdg_config.join("vikey")
+            .or_else(|_| {
+                std::env::var("HOME").map(|h| PathBuf::from(h).join(".config"))
+            })
+            .ok()?;
+        Some(xdg_config.join("vikey"))
+    }
+
+    /// Get config directory path (~/.config/vikey/)
+    /// Falls back to /tmp/.config/vikey only as last resort (logged warning).
+    pub fn config_dir() -> PathBuf {
+        if let Some(dir) = Self::config_dir_opt() {
+            return dir;
+        }
+        eprintln!("ViKey: WARNING - HOME and XDG_CONFIG_HOME unset, config will not be saved");
+        PathBuf::from("/tmp/.config/vikey")
     }
 
     /// Get config file path (~/.config/vikey/config.json)
@@ -94,15 +106,33 @@ impl Settings {
 
     /// Save settings to config file
     pub fn save(&self) -> Result<(), String> {
-        let dir = Self::config_dir();
+        let dir = match Self::config_dir_opt() {
+            Some(d) => d,
+            None => return Err("HOME and XDG_CONFIG_HOME unset, cannot save config".into()),
+        };
         if !dir.exists() {
             fs::create_dir_all(&dir)
                 .map_err(|e| format!("Failed to create config dir: {}", e))?;
         }
 
+        let config_path = dir.join("config.json");
+
+        // Protect against symlink attacks: remove if symlink before writing
+        if let Ok(meta) = fs::symlink_metadata(&config_path) {
+            if meta.file_type().is_symlink() {
+                fs::remove_file(&config_path)
+                    .map_err(|e| format!("Failed to remove config symlink: {}", e))?;
+            }
+        }
+
         let json = self.to_json();
-        fs::write(Self::config_path(), json)
-            .map_err(|e| format!("Failed to write config: {}", e))
+        fs::write(&config_path, json)
+            .map_err(|e| format!("Failed to write config: {}", e))?;
+
+        // Set restrictive permissions (owner read/write only)
+        fs::set_permissions(&config_path, fs::Permissions::from_mode(0o600)).ok();
+
+        Ok(())
     }
 
     /// Apply all settings to Rust engine via FFI
@@ -122,8 +152,20 @@ impl Settings {
 
             vikey_core::ime_clear_shortcuts();
             for shortcut in &self.shortcuts {
-                let trigger = std::ffi::CString::new(shortcut.trigger.as_str()).unwrap();
-                let replacement = std::ffi::CString::new(shortcut.replacement.as_str()).unwrap();
+                let trigger = match std::ffi::CString::new(shortcut.trigger.as_str()) {
+                    Ok(c) => c,
+                    Err(_) => {
+                        eprintln!("ViKey: Skipping shortcut with invalid trigger");
+                        continue;
+                    }
+                };
+                let replacement = match std::ffi::CString::new(shortcut.replacement.as_str()) {
+                    Ok(c) => c,
+                    Err(_) => {
+                        eprintln!("ViKey: Skipping shortcut with invalid replacement");
+                        continue;
+                    }
+                };
                 vikey_core::ime_add_shortcut(trigger.as_ptr(), replacement.as_ptr());
             }
         }
